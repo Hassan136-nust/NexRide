@@ -1,19 +1,17 @@
 'use client'
 import React from 'react'
-import { useState } from 'react'
 import HeroSection from './HeroSection'
 import VehicleSection from './VehicleSection'
-import AuthModal from './AuthModal'
 
-function PublicHome() {
+type Props = {
+  onAuthRequired: () => void
+}
 
-const [authOpen , setAuthOpen] = useState(false)
-
+function PublicHome({ onAuthRequired }: Props) {
   return (
     <>
-    <HeroSection/>
-    <VehicleSection/>
-    <AuthModal open = {authOpen} onClose={()=>setAuthOpen(false)}/>
+      <HeroSection onAuthRequired={onAuthRequired} />
+      <VehicleSection />
     </>
   )
 }

@@ -1,32 +1,35 @@
-import mongoose from "mongoose";
-const mongodbUrl = process.env.MONODB_URL
+import mongoose from "mongoose"
 
-if(!mongodbUrl){
-    throw new Error ("Db url not Found!")
+const mongodbUrl = process.env.MONGODB_URL
+
+if (!mongodbUrl) {
+  throw new Error("MONGODB_URL environment variable is not defined")
 }
 
-let cached = global.mongooseConnection
-
-if(!cached){
-    cached = global.mongooseConnection={conn:null,promise:null}
+interface MongooseCache {
+  conn: mongoose.Connection | null
+  promise: Promise<mongoose.Connection> | null
 }
 
-const connectDb = async ()=>{
-    if(cached.conn){
-        return cached.conn
-    }
-    if(!cached.promise){
-        cached.promise= mongoose.connect(mongodbUrl).then(c=>c.connection)
-    }
+let cached: MongooseCache = global.mongooseConnection
 
-    try{
-        const conn = await cached.promise
-        return conn;
-    }
-    catch (error){
-        console.log("Error connecting to DB",error)
+if (!cached) {
+  cached = global.mongooseConnection = { conn: null, promise: null }
+}
 
-    }
+const connectDb = async (): Promise<mongoose.Connection> => {
+  if (cached.conn) {
+    return cached.conn
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose
+      .connect(mongodbUrl, { dbName: "nexride" })
+      .then((c) => c.connection)
+  }
+
+  cached.conn = await cached.promise
+  return cached.conn
 }
 
 export default connectDb
