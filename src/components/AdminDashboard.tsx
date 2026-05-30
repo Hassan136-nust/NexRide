@@ -1,9 +1,421 @@
-import React from 'react'
+'use client'
 
-function AdminDashboard() {
+import React, { useEffect, useState } from 'react'
+import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  PieChart, Pie, Cell, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
+} from 'recharts'
+import {
+  Users, CheckCircle, Clock, XCircle, Car,
+  FileText, LayoutDashboard, ChevronRight,
+  LogOut, Menu, X, Shield, TrendingUp
+} from 'lucide-react'
+import { signOut } from 'next-auth/react'
+import { useDispatch } from 'react-redux'
+import { setUserData } from '@/redux/userSlice'
+
+type Tab = 'overview' | 'partners' | 'kyc' | 'vehicles'
+
+type PartnerReview = {
+  _id: string
+  name: string
+  email: string
+  vehicleType?: string | null
+}
+
+type DashboardData = {
+  totalPartners: number
+  totalApprovedPartners: number
+  totalPendingPartners: number
+  totalRejectedPartners: number
+  pendingPartnerReviews: PartnerReview[]
+}
+
+const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'overview',  label: 'Overview',  icon: LayoutDashboard },
+  { id: 'partners',  label: 'Partners',  icon: Users },
+  { id: 'kyc',       label: 'KYC',       icon: Shield },
+  { id: 'vehicles',  label: 'Vehicles',  icon: Car },
+]
+
+export default function AdminDashboard() {
+  const dispatch = useDispatch()
+  const [tab, setTab]   = useState<Tab>('overview')
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/admin/dashboard')
+        if (!res.ok) return
+        const json: DashboardData = await res.json()
+        setData(json)
+      } catch (err) {
+        console.error('Admin dashboard error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const handleLogout = async () => {
+    dispatch(setUserData(null))
+    await signOut({ redirect: false })
+  }
+
+  const kpis = data ? [
+    { label: 'Total Partners',   value: data.totalPartners,          icon: Users,         color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20' },
+    { label: 'Approved',         value: data.totalApprovedPartners,  icon: CheckCircle,   color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    { label: 'Pending Review',   value: data.totalPendingPartners,   icon: Clock,         color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    { label: 'Rejected',         value: data.totalRejectedPartners,  icon: XCircle,       color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20' },
+  ] : []
+
+  const pieData = data ? [
+    { name: 'Approved', value: data.totalApprovedPartners  || 0 },
+    { name: 'Pending',  value: data.totalPendingPartners   || 0 },
+    { name: 'Rejected', value: data.totalRejectedPartners  || 0 },
+  ] : []
+
+  const COLORS = ['#22c55e', '#facc15', '#ef4444']
+
+  /* ── SIDEBAR ── */
+  const Sidebar = ({ mobile = false }: { mobile?: boolean }) => (
+    <div className={`flex flex-col h-full ${mobile ? '' : 'w-60'}`}>
+      {/* Logo */}
+      <div className='flex items-center gap-3 px-5 py-5 border-b border-white/10'>
+        <Image src='/logo.png' alt='NexRide' width={36} height={36} />
+        <div>
+          <p className='text-sm font-bold text-white'>NexRide</p>
+          <p className='text-[10px] text-gray-500 uppercase tracking-widest'>Admin Panel</p>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className='flex-1 px-3 py-4 space-y-1'>
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon
+          const active = tab === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => { setTab(item.id); setSidebarOpen(false) }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                ${active
+                  ? 'bg-white text-black'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+            >
+              <Icon size={16} />
+              {item.label}
+              {active && <ChevronRight size={14} className='ml-auto' />}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Logout */}
+      <div className='px-3 py-4 border-t border-white/10'>
+        <button
+          onClick={handleLogout}
+          className='w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400
+          hover:text-white hover:bg-white/5 transition-all'
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
+    </div>
+  )
+
   return (
-    <div>AdminDashboard</div>
+    <div className='flex h-screen bg-[#080808] text-white overflow-hidden'>
+
+      {/* DESKTOP SIDEBAR */}
+      <aside className='hidden md:flex flex-col w-60 border-r border-white/10 shrink-0'>
+        <Sidebar />
+      </aside>
+
+      {/* MOBILE SIDEBAR OVERLAY */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className='fixed inset-0 bg-black/60 z-40 md:hidden'
+            />
+            <motion.aside
+              initial={{ x: -240 }}
+              animate={{ x: 0 }}
+              exit={{ x: -240 }}
+              transition={{ type: 'tween', duration: 0.22 }}
+              className='fixed left-0 top-0 h-full w-60 bg-[#0e0e0e] border-r border-white/10 z-50 md:hidden'
+            >
+              <Sidebar mobile />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* MAIN */}
+      <div className='flex-1 flex flex-col overflow-hidden'>
+
+        {/* TOP BAR */}
+        <header className='flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0'>
+          <div className='flex items-center gap-3'>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className='md:hidden text-gray-400 hover:text-white'
+            >
+              <Menu size={20} />
+            </button>
+            <div>
+              <h1 className='text-base font-semibold capitalize'>
+                {tab === 'overview' ? 'Dashboard Overview' : tab + ' Management'}
+              </h1>
+              <p className='text-xs text-gray-500'>NexRide Admin</p>
+            </div>
+          </div>
+
+          <div className='flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5'>
+            <div className='w-6 h-6 rounded-full bg-white text-black text-xs font-bold flex items-center justify-center'>
+              A
+            </div>
+            <span className='text-xs text-gray-300 hidden sm:block'>Admin</span>
+          </div>
+        </header>
+
+        {/* SCROLLABLE CONTENT */}
+        <main className='flex-1 overflow-y-auto p-5 space-y-6'>
+
+          {loading ? (
+            <div className='flex items-center justify-center h-64'>
+              <div className='flex flex-col items-center gap-3'>
+                <div className='w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin' />
+                <p className='text-sm text-gray-500'>Loading dashboard...</p>
+              </div>
+            </div>
+          ) : !data ? (
+            <div className='flex items-center justify-center h-64'>
+              <p className='text-sm text-gray-500'>Failed to load data.</p>
+            </div>
+          ) : (
+            <>
+              {/* ── OVERVIEW TAB ── */}
+              {tab === 'overview' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='space-y-6'>
+
+                  {/* KPI CARDS */}
+                  <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
+                    {kpis.map((kpi, i) => {
+                      const Icon = kpi.icon
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.07 }}
+                          className={`p-5 rounded-2xl border ${kpi.border} ${kpi.bg}`}
+                        >
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${kpi.bg} mb-3`}>
+                            <Icon size={18} className={kpi.color} />
+                          </div>
+                          <p className='text-2xl font-bold'>{kpi.value}</p>
+                          <p className='text-xs text-gray-400 mt-1'>{kpi.label}</p>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+
+                  {/* CHARTS */}
+                  <div className='grid md:grid-cols-2 gap-5'>
+
+                    {/* PIE */}
+                    <div className='p-5 rounded-2xl border border-white/10 bg-white/[0.03]'>
+                      <div className='flex items-center gap-2 mb-5'>
+                        <TrendingUp size={15} className='text-gray-400' />
+                        <h2 className='text-sm font-medium text-gray-300'>Partner Status Breakdown</h2>
+                      </div>
+                      <ResponsiveContainer width='100%' height={220}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            dataKey='value'
+                            cx='50%' cy='50%'
+                            innerRadius={55}
+                            outerRadius={85}
+                            paddingAngle={3}
+                          >
+                            {pieData.map((_, i) => (
+                              <Cell key={i} fill={COLORS[i]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }}
+                            itemStyle={{ color: '#ccc' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      {/* Legend */}
+                      <div className='flex justify-center gap-5 mt-2'>
+                        {pieData.map((d, i) => (
+                          <div key={i} className='flex items-center gap-1.5'>
+                            <div className='w-2.5 h-2.5 rounded-full' style={{ background: COLORS[i] }} />
+                            <span className='text-xs text-gray-400'>{d.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* BAR */}
+                    <div className='p-5 rounded-2xl border border-white/10 bg-white/[0.03]'>
+                      <div className='flex items-center gap-2 mb-5'>
+                        <LayoutDashboard size={15} className='text-gray-400' />
+                        <h2 className='text-sm font-medium text-gray-300'>Partner Flow</h2>
+                      </div>
+                      <ResponsiveContainer width='100%' height={220}>
+                        <BarChart data={pieData} barSize={36}>
+                          <CartesianGrid strokeDasharray='3 3' stroke='rgba(255,255,255,0.05)' />
+                          <XAxis dataKey='name' stroke='#555' tick={{ fontSize: 11 }} />
+                          <YAxis stroke='#555' tick={{ fontSize: 11 }} allowDecimals={false} />
+                          <Tooltip
+                            contentStyle={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }}
+                            itemStyle={{ color: '#ccc' }}
+                            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                          />
+                          <Bar dataKey='value' radius={[6, 6, 0, 0]}>
+                            {pieData.map((_, i) => (
+                              <Cell key={i} fill={COLORS[i]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* PENDING REVIEWS PREVIEW */}
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='flex items-center justify-between px-5 py-4 border-b border-white/10'>
+                      <h2 className='text-sm font-medium text-gray-300'>Pending Reviews</h2>
+                      <button
+                        onClick={() => setTab('partners')}
+                        className='text-xs text-gray-500 hover:text-white transition flex items-center gap-1'
+                      >
+                        View all <ChevronRight size={12} />
+                      </button>
+                    </div>
+                    <PartnerTable reviews={data.pendingPartnerReviews.slice(0, 5)} />
+                  </div>
+
+                </motion.div>
+              )}
+
+              {/* ── PARTNERS TAB ── */}
+              {tab === 'partners' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='space-y-5'>
+                  <div className='grid grid-cols-3 gap-4'>
+                    {[
+                      { label: 'Approved', value: data.totalApprovedPartners, color: 'text-emerald-400' },
+                      { label: 'Pending',  value: data.totalPendingPartners,  color: 'text-yellow-400' },
+                      { label: 'Rejected', value: data.totalRejectedPartners, color: 'text-red-400' },
+                    ].map((s, i) => (
+                      <div key={i} className='p-4 rounded-2xl border border-white/10 bg-white/[0.03] text-center'>
+                        <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
+                        <p className='text-xs text-gray-500 mt-1'>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-white/10'>
+                      <h2 className='text-sm font-medium text-gray-300'>
+                        All Pending Partner Reviews
+                        <span className='ml-2 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full'>
+                          {data.pendingPartnerReviews.length}
+                        </span>
+                      </h2>
+                    </div>
+                    <PartnerTable reviews={data.pendingPartnerReviews} />
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── KYC TAB ── */}
+              {tab === 'kyc' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <EmptyState icon={Shield} title='KYC Review' message='KYC document review panel is coming soon.' />
+                </motion.div>
+              )}
+
+              {/* ── VEHICLES TAB ── */}
+              {tab === 'vehicles' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                  <EmptyState icon={Car} title='Vehicle Management' message='Vehicle review and management panel is coming soon.' />
+                </motion.div>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+    </div>
   )
 }
 
-export default AdminDashboard
+/* ── PARTNER TABLE ── */
+function PartnerTable({ reviews }: { reviews: PartnerReview[] }) {
+  if (reviews.length === 0) {
+    return (
+      <div className='px-5 py-10 text-center text-sm text-gray-500'>
+        No pending reviews right now.
+      </div>
+    )
+  }
+
+  return (
+    <div className='divide-y divide-white/5'>
+      {reviews.map((p) => (
+        <div key={String(p._id)} className='flex items-center justify-between px-5 py-3.5 hover:bg-white/[0.02] transition'>
+          <div className='flex items-center gap-3'>
+            <div className='w-8 h-8 rounded-full bg-white/10 text-white text-xs font-bold flex items-center justify-center shrink-0'>
+              {p.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className='text-sm font-medium'>{p.name}</p>
+              <p className='text-xs text-gray-500'>{p.email}</p>
+            </div>
+          </div>
+          <div className='flex items-center gap-3'>
+            {p.vehicleType && (
+              <span className='text-xs bg-white/10 text-gray-300 px-2.5 py-1 rounded-full capitalize'>
+                {p.vehicleType}
+              </span>
+            )}
+            <span className='text-xs bg-yellow-500/15 text-yellow-400 px-2.5 py-1 rounded-full'>
+              Pending
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── EMPTY STATE ── */
+function EmptyState({ icon: Icon, title, message }: { icon: React.ElementType; title: string; message: string }) {
+  return (
+    <div className='flex flex-col items-center justify-center py-24 rounded-2xl border border-white/10 bg-white/[0.03]'>
+      <div className='w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4'>
+        <Icon size={24} className='text-gray-500' />
+      </div>
+      <p className='text-sm font-medium text-gray-300'>{title}</p>
+      <p className='text-xs text-gray-600 mt-1'>{message}</p>
+    </div>
+  )
+}

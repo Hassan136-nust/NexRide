@@ -39,8 +39,9 @@ export default function PartnerDashboard() {
   ]
 
   const getStatus = (stepId: number): StepStatus => {
-    if (stepId < currentStep) return "completed"
-    if (stepId === currentStep) return "active"
+    if (stepId <= currentStep) return "completed"
+    // next step after all completed ones is active, unless we're at the end
+    if (stepId === currentStep + 1 && currentStep < steps.length) return "active"
     return "locked"
   }
 
@@ -116,7 +117,7 @@ export default function PartnerDashboard() {
                 {i !== steps.length - 1 && (
                   <div
                     className={`flex-1 h-[2px] mx-2
-                    ${step.id < currentStep ? "bg-emerald-500" : "bg-white/10"}`}
+                    ${step.id <= currentStep ? "bg-emerald-500" : "bg-white/10"}`}
                   />
                 )}
               </div>
