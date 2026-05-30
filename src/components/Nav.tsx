@@ -124,11 +124,18 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                             <p className='text-xs text-gray-500 truncate'>
                               {userData.email}
                             </p>
+                            <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
+                              ${userData.role === "partner" ? "bg-green-500/20 text-green-400" :
+                                userData.role === "admin" ? "bg-purple-500/20 text-purple-400" :
+                                "bg-white/10 text-gray-400"}`}>
+                              {userData.role}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Become a Partner - Ultra Interactive Styling */}
+                      {/* Become a Partner - only shown if not already a partner/admin */}
+                      {userData.role === "user" && (
                       <div className='px-3 py-2.5 border-b border-white/10'>
                         <motion.button
                           whileHover={{ scale: 1.02 }}
@@ -146,6 +153,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                           Become a Partner
                         </motion.button>
                       </div>
+                      )}
 
                       {/* Logout */}
                       <div className='px-2 py-2'>
@@ -230,10 +238,17 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                     <div className='min-w-0'>
                       <p className='text-sm font-semibold truncate'>{userData.name}</p>
                       <p className='text-xs text-gray-500 truncate'>{userData.email}</p>
+                      <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
+                        ${userData.role === "partner" ? "bg-green-500/20 text-green-400" :
+                          userData.role === "admin" ? "bg-purple-500/20 text-purple-400" :
+                          "bg-white/10 text-gray-400"}`}>
+                        {userData.role}
+                      </span>
                     </div>
                   </div>
                   
                   {/* Mobile Become a Partner Button */}
+                  {userData.role === "user" && (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setMobileOpen(false); router.push('/partner/onboarding/vehicle') }}
@@ -243,6 +258,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                     <Briefcase size={16} />
                     Become a Partner
                   </motion.button>
+                  )}
                   
                   <button
                     onClick={() => { setMobileOpen(false); handleLogout() }}

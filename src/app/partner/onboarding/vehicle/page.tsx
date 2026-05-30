@@ -22,6 +22,15 @@ export default function Page() {
   const [step, setStep] = useState(1)
   const [vehicleType, setVehicleType] = useState<VehicleType | "">("")
 
+  const [vehicleModel, setVehicleModel] = useState("")
+  const [vehicleNumber, setVehicleNumber] = useState("")
+  const [baseFare, setBaseFare] = useState("")
+  const [vehicleImage, setVehicleImage] = useState<string>("")
+  const [previewImage, setPreviewImage] = useState<string>("")
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
   const vehicles = [
     { type: "bike", icon: Bike },
     { type: "car", icon: Car },
@@ -29,6 +38,45 @@ export default function Page() {
     { type: "loading", icon: Bus },
     { type: "auto", icon: Gauge },
   ] as const
+
+  const handleSubmit = async () => {
+    setError("")
+
+    if (!vehicleType || !vehicleModel || !vehicleNumber || !vehicleImage) {
+      setError("Please fill all required fields and upload a vehicle image.")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const response = await fetch("/api/partner/onboarding/vehicle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: vehicleType,
+          vehicleModel,
+          number: vehicleNumber,
+          imageUrl: vehicleImage,
+          baseFare: baseFare ? Number(baseFare) : 0,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Something went wrong")
+        return
+      }
+
+      router.push("/partner/onboarding/documents")
+    } catch (err) {
+      console.error(err)
+      setError("Failed to save vehicle details. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className='relative min-h-screen w-full text-white overflow-hidden'>
@@ -124,49 +172,96 @@ export default function Page() {
 
             {/* INPUTS */}
             <div className='mt-10 grid md:grid-cols-2 gap-5'>
-              <Input icon={<Car size={18} />} label="Vehicle Model" placeholder="Toyota Corolla" />
-              <Input icon={<Hash size={18} />} label="Vehicle Number" placeholder="ABC-123" />
-              <Input icon={<Gauge size={18} />} label="Base Fare" placeholder="Base fare" type="number" />
+              <Input
+                icon={<Car size={18} />}
+                label="Vehicle Model"
+                placeholder="Toyota Corolla"
+                value={vehicleModel}
+                onChange={setVehicleModel}
+              />
+              <Input
+                icon={<Hash size={18} />}
+                label="Vehicle Number"
+                placeholder="ABC-123"
+                value={vehicleNumber}
+                onChange={setVehicleNumber}
+              />
+              <Input
+                icon={<Gauge size={18} />}
+                label="Base Fare"
+                placeholder="Base fare"
+                type="number"
+                value={baseFare}
+                onChange={setBaseFare}
+              />
 
               <motion.div whileHover={{ scale: 1.02 }}>
-                <label className='text-sm text-gray-300'>Vehicle Image</label>
-                <div className='flex items-center gap-2 bg-white/10 p-3 rounded-xl mt-1 cursor-pointer border border-white/20'>
+                <label className='text-sm text-gray-300'>
+                  Vehicle Image
+                </label>
+
+                <label
+                  htmlFor='vehicleImage'
+                  className='flex items-center gap-2 bg-white/10 p-3 rounded-xl mt-1
+                  cursor-pointer border border-white/20 hover:bg-white/15 transition'
+                >
                   <ImagePlus size={18} className='text-gray-300' />
+
                   <span className='text-gray-300 text-sm'>
-                    Upload vehicle image
+                    {previewImage ? "Change vehicle image" : "Upload vehicle image"}
                   </span>
-                </div>
+
+                  <input
+                    id='vehicleImage'
+                    type='file'
+                    accept='image/*'
+                    className='hidden'
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onloadend = () => {
+                        const base64 = reader.result as string
+                        setVehicleImage(base64)
+                        setPreviewImage(base64)
+                      }
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                </label>
+
+                {/* PREVIEW */}
+                {previewImage && (
+                  <motion.img
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    src={previewImage}
+                    alt='Vehicle Preview'
+                    className='mt-4 w-full h-44 object-cover rounded-2xl border border-white/20'
+                  />
+                )}
               </motion.div>
             </div>
+
+            {/* ERROR */}
+            {error && (
+              <p className='text-red-400 text-sm mt-4 text-center'>{error}</p>
+            )}
 
             {/* NEXT */}
             <div className='flex justify-end mt-10'>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                disabled={!vehicleType}
-                onClick={() => setStep(2)}
+                disabled={!vehicleType || loading}
+                onClick={handleSubmit}
                 className='px-8 py-3 rounded-xl bg-white text-black font-semibold
                 disabled:opacity-40 disabled:cursor-not-allowed'
               >
-                Next Step
+                {loading ? "Saving..." : "Next Step"}
               </motion.button>
             </div>
           </motion.div>
-        )}
-
-        {/* STEP 2 */}
-        {step === 2 && (
-          <div className='text-center mt-20 text-gray-300'>
-            Step 2 Coming Soon (Documents Upload)
-          </div>
-        )}
-
-        {/* STEP 3 */}
-        {step === 3 && (
-          <div className='text-center mt-20 text-gray-300'>
-            Step 3 Coming Soon (Bank Details)
-          </div>
         )}
 
       </div>
@@ -179,12 +274,16 @@ function Input({
   icon,
   label,
   placeholder,
-  type = "text"
+  type = "text",
+  value,
+  onChange,
 }: {
   icon: React.ReactNode
   label: string
   placeholder: string
   type?: string
+  value: string
+  onChange: (val: string) => void
 }) {
   return (
     <motion.div whileHover={{ scale: 1.02 }}>
@@ -193,6 +292,8 @@ function Input({
         {icon}
         <input
           type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           className='bg-transparent outline-none w-full text-white'
           placeholder={placeholder}
         />
