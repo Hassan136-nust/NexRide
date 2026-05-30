@@ -135,7 +135,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                       </div>
 
                       {/* Become a Partner - only shown if not already a partner/admin */}
-                      {userData.role === "user" && (
+                      {userData.role === "user" && userData.partnerOnboardingSteps === 0 && (
                       <div className='px-3 py-2.5 border-b border-white/10'>
                         <motion.button
                           whileHover={{ scale: 1.02 }}
@@ -248,7 +248,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                   </div>
                   
                   {/* Mobile Become a Partner Button */}
-                  {userData.role === "user" && (
+                  {userData.role === "user" && userData.partnerOnboardingSteps === 0 && (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setMobileOpen(false); router.push('/partner/onboarding/vehicle') }}

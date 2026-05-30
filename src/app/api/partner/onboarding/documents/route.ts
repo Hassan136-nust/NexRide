@@ -108,8 +108,6 @@ export async function POST(req: NextRequest) {
       user.partnerOnboardingSteps = 2
     }
 
-    user.role = "partner"
-
     await user.save()
 
     return NextResponse.json(
