@@ -96,7 +96,7 @@ export default function PartnerReviewPage() {
       const json = await res.json()
       if (!res.ok) { setError(json.message || 'Final approval failed'); return }
       // Partner moves to KYC onboarding step - redirect admin back to dashboard
-      router.push('/admin/dashboard')
+      router.push('/')
     } catch { setError('Something went wrong') }
     finally { setSubmitting(false) }
   }
@@ -400,7 +400,7 @@ export default function PartnerReviewPage() {
                   <CheckCircle size={14} className='text-emerald-400 shrink-0' />
                   <div>
                     <p className='text-xs font-semibold text-emerald-400'>All sections approved</p>
-                    <p className='text-[10px] text-gray-500'>Ready for final approval</p>
+                    <p className='text-[10px] text-gray-500'>Pass review to move to Video KYC</p>
                   </div>
                 </div>
                 <button
@@ -408,7 +408,7 @@ export default function PartnerReviewPage() {
                   onClick={handleFinalApprove}
                   className='w-full py-2 bg-emerald-500 text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition disabled:opacity-50'
                 >
-                  {submitting ? 'Approving...' : 'Finalize & Approve Partner'}
+                  {submitting ? 'Approving...' : 'Pass Review & Continue'}
                 </button>
               </motion.div>
             ) : (
