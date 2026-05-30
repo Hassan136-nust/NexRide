@@ -110,6 +110,8 @@ export async function POST(req: NextRequest) {
     if (user.partnerOnboardingSteps < 3) {
       user.partnerOnboardingSteps = 3
     }
+    // Mark as pending review now that all 3 steps are done
+    user.partnerStatus = "pending"
 
     await user.save()
 

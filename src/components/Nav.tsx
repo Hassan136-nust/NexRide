@@ -12,6 +12,7 @@ import { setUserData } from '../redux/userSlice'
 import { signOut } from 'next-auth/react'
 import { useOnClickOutside } from '../hooks/useOnClickOutside'
 import { useRouter } from 'next/navigation'
+import logo from "../../public/logo.png"
 
 type NavProps = {
   onLoginClick: () => void
@@ -55,7 +56,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
         <div className='max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between'>
 
           {/* Logo */}
-          <Image src="/logo.png" alt="NexRide logo" width={44} height={44} priority />
+          <Image src={logo} alt="NexRide logo" width={84} height={84} priority />
 
           {/* Nav links — desktop */}
           <div className='hidden md:flex items-center gap-10'>

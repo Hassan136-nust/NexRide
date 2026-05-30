@@ -6,7 +6,8 @@ interface IPartnerBank {
   bankName: string
   ifscCode: string
   accountNumber: string
-  status: "not added" | "added" | "verified"
+  status: "not added" | "added" | "verified" | "rejected"
+  rejectionReason?: string
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -46,8 +47,13 @@ const partnerBankSchema = new mongoose.Schema<IPartnerBank>(
 
     status: {
       type: String,
-      enum: ["not added", "added", "verified"],
+      enum: ["not added", "added", "verified", "rejected"],
       default: "not added",
+    },
+
+    rejectionReason: {
+      type: String,
+      default: "",
     },
 
     isActive: {
