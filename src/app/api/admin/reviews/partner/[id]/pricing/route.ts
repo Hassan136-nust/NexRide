@@ -1,7 +1,6 @@
 import { auth } from "@/auth"
 import connectDb from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
-import Vehicle from "@/models/vehicles.model"
 import User from "@/models/user.model"
 
 export async function POST(
@@ -17,41 +16,40 @@ export async function POST(
         }
 
         const { id } = await params
-        const { action, reason } = await req.json() as {
-            action: "approve" | "reject"
-            reason?: string
-        }
+        const { action, reason } = await req.json()
 
-        if (!action || !["approve", "reject"].includes(action)) {
+        if (!["approve", "reject"].includes(action)) {
             return NextResponse.json({ message: "Invalid action" }, { status: 400 })
         }
 
-        if (action === "reject" && !reason?.trim()) {
-            return NextResponse.json({ message: "Rejection reason required" }, { status: 400 })
-        }
-
-        const user = await User.findById(id) as any
+        const user = await User.findById(id)
         if (!user) {
             return NextResponse.json({ message: "Partner not found" }, { status: 404 })
         }
 
         if (action === "approve") {
-            // Advance to step 7 (Final Review / Go-Live)
-            user.partnerOnboardingSteps = 7
+            // Pricing approved - advance through final steps and make partner LIVE
+            user.partnerOnboardingSteps = 8 // Complete all steps
+            user.partnerStatus = "approved"
+            user.isPartnerVerified = true // MAKE PARTNER LIVE!
             user.partnerRejectionReason = ""
-            await user.save()
-
-            return NextResponse.json({ success: true, message: "Pricing approved. Partner advanced to Step 7." })
-        } else {
-            // Reject: reset step back to 5 so partner can re-submit pricing
-            user.partnerOnboardingSteps = 5
+        } else if (action === "reject") {
+            if (!reason?.trim()) {
+                return NextResponse.json({ message: "Rejection reason is required" }, { status: 400 })
+            }
             user.partnerRejectionReason = reason
-            await user.save()
-
-            return NextResponse.json({ success: true, message: "Pricing rejected." })
+            user.partnerStatus = "rejected"
+            // Keep on step 6 to force them to resubmit pricing
         }
+
+        await user.save()
+
+        return NextResponse.json({
+            success: true,
+            message: action === "approve" ? "Pricing Approved - Partner is now LIVE!" : "Pricing Rejected",
+        })
     } catch (error) {
-        console.error("Admin Pricing Review Error:", error)
+        console.error("Partner Pricing API error:", error)
         return NextResponse.json({ message: "Internal Server Error" }, { status: 500 })
     }
 }

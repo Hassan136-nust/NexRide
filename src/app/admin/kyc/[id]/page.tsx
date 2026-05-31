@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt'
 import { CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 
 export default function AdminKycRoom() {
     const containerRef = useRef<HTMLDivElement>(null)

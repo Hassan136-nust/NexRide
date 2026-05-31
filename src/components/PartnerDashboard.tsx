@@ -293,6 +293,75 @@ export default function PartnerDashboard() {
           )
         })}
       </div>
+
+      {/* CONGRATULATIONS - YOU'RE LIVE! */}
+      {isVerified && currentStep >= steps.length && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+          className="max-w-3xl mx-auto mt-8"
+        >
+          <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 via-emerald-600/5 to-black border border-emerald-500/30 rounded-2xl p-6 text-center">
+            
+            {/* CONTENT */}
+            <div className="relative z-10">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
+                className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500 mb-4 shadow-lg shadow-emerald-500/30"
+              >
+                <Rocket size={24} className="text-black" />
+              </motion.div>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="text-2xl font-extrabold text-white mb-2 tracking-tight"
+              >
+                Congratulations!
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="text-emerald-300 text-base font-medium mb-1"
+              >
+                You're Live on NexRide!
+              </motion.p>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="text-gray-400 text-xs max-w-md mx-auto mb-4"
+              >
+                Your account is fully verified and active. Start accepting rides and earning with NexRide today!
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.9 }}
+                className="flex items-center justify-center gap-3"
+              >
+                <div className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Active</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+                  <CheckCircle2 size={12} className="text-emerald-400" />
+                  <span className="text-[10px] font-semibold text-gray-300">Verified Partner</span>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <PricingModal
         isOpen={showPricing}
         onClose={() => setShowPricing(false)}
