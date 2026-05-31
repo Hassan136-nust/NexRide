@@ -16,6 +16,7 @@ import { signOut } from 'next-auth/react'
 import { useDispatch } from 'react-redux'
 import { setUserData } from '@/redux/userSlice'
 import { useRouter } from 'next/navigation'
+import AdminPricingReviewModal from './AdminPricingReviewModal'
 
 type Tab = 'overview' | 'partners' | 'kyc' | 'vehicles'
 
@@ -33,6 +34,7 @@ type DashboardData = {
   totalRejectedPartners: number
   pendingPartnerReviews: PartnerReview[]
   kycReviews: PartnerReview[]
+  pricingReviews: PartnerReview[]
   pendingVehiclesCount: number
 }
 
@@ -50,20 +52,22 @@ export default function AdminDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [selectedPricingPartner, setSelectedPricingPartner] = useState<string | null>(null)
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard')
+      if (!res.ok) return
+      const json: DashboardData = await res.json()
+      setData(json)
+    } catch (err) {
+      console.error('Admin dashboard error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/admin/dashboard')
-        if (!res.ok) return
-        const json: DashboardData = await res.json()
-        setData(json)
-      } catch (err) {
-        console.error('Admin dashboard error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchData()
   }, [])
 
@@ -95,7 +99,7 @@ export default function AdminDashboard() {
         <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout}
           kycCount={data?.kycReviews?.length ?? 0}
           pendingCount={data?.pendingPartnerReviews?.length ?? 0}
-          vehiclesCount={data?.pendingVehiclesCount ?? 0}
+          pricingCount={data?.pricingReviews?.length ?? 0}
         />
       </aside>
 
@@ -120,7 +124,7 @@ export default function AdminDashboard() {
               <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout}
                 kycCount={data?.kycReviews?.length ?? 0}
                 pendingCount={data?.pendingPartnerReviews?.length ?? 0}
-                vehiclesCount={data?.pendingVehiclesCount ?? 0}
+                pricingCount={data?.pricingReviews?.length ?? 0}
                 mobile
               />
             </motion.aside>
@@ -358,14 +362,65 @@ export default function AdminDashboard() {
 
               {/* ── VEHICLES TAB ── */}
               {tab === 'vehicles' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  <EmptyState icon={Car} title='Vehicle Management' message='Vehicle review and management panel is coming soon.' />
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='space-y-5'>
+                  <div className='p-5 rounded-2xl border border-white/10 bg-white/[0.03] space-y-2'>
+                    <h2 className='text-lg font-semibold text-white'>Pricing Review</h2>
+                    <p className='text-sm text-gray-400'>
+                      Partners who have completed video KYC and submitted their pricing for admin review.
+                    </p>
+                  </div>
+
+                  {/* PRICING REVIEW QUEUE */}
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-white/10 flex items-center justify-between'>
+                      <h2 className='text-sm font-medium text-gray-300'>
+                        Pending Pricing Review
+                        <span className='ml-2 text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full'>
+                          {data.pricingReviews?.length || 0}
+                        </span>
+                      </h2>
+                    </div>
+                    {data.pricingReviews && data.pricingReviews.length > 0 ? (
+                      <div className='divide-y divide-white/5'>
+                        {data.pricingReviews.map((partner) => (
+                          <div key={partner._id} className='flex items-center justify-between p-4 hover:bg-white/[0.02] transition'>
+                            <div>
+                              <p className='text-sm font-semibold'>{partner.name}</p>
+                              <p className='text-xs text-gray-400'>{partner.email}</p>
+                              {partner.vehicleType && (
+                                <span className='text-xs bg-white/10 text-gray-300 px-2 py-0.5 rounded-full capitalize mt-1 inline-block'>
+                                  {partner.vehicleType}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => setSelectedPricingPartner(partner._id)}
+                              className='px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold rounded-lg transition'
+                            >
+                              Review Pricing
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='p-8 text-center text-sm text-gray-500'>
+                        No partners pending pricing review
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </>
           )}
         </main>
       </div>
+
+      <AdminPricingReviewModal
+        isOpen={selectedPricingPartner !== null}
+        onClose={() => setSelectedPricingPartner(null)}
+        partnerId={selectedPricingPartner}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }
@@ -439,27 +494,27 @@ interface SidebarProps {
   handleLogout: () => void
   kycCount: number
   pendingCount: number
-  vehiclesCount: number
+  pricingCount: number
   mobile?: boolean
 }
 
-function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, kycCount, pendingCount, vehiclesCount, mobile = false }: SidebarProps) {
+function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, kycCount, pendingCount, pricingCount, mobile = false }: SidebarProps) {
 
   // total pending across all actionable tabs — shown on Overview
-  const totalPending = pendingCount + kycCount + vehiclesCount
+  const totalPending = pendingCount + kycCount + pricingCount
 
   const badges: Partial<Record<Tab, { count: number; color: string; activeBg: string }>> = {
     overview: totalPending > 0
-      ? { count: totalPending, color: 'bg-white/15 text-white',         activeBg: 'bg-black/20 text-black' }
+      ? { count: totalPending, color: 'bg-white/15 text-white', activeBg: 'bg-black/20 text-black' }
       : undefined as any,
     partners: pendingCount > 0
       ? { count: pendingCount, color: 'bg-yellow-500/20 text-yellow-400', activeBg: 'bg-black/20 text-black' }
       : undefined as any,
     kyc: kycCount > 0
-      ? { count: kycCount,     color: 'bg-blue-500/20 text-blue-400',    activeBg: 'bg-black/20 text-black' }
+      ? { count: kycCount, color: 'bg-blue-500/20 text-blue-400', activeBg: 'bg-black/20 text-black' }
       : undefined as any,
-    vehicles: vehiclesCount > 0
-      ? { count: vehiclesCount, color: 'bg-orange-500/20 text-orange-400', activeBg: 'bg-black/20 text-black' }
+    vehicles: pricingCount > 0
+      ? { count: pricingCount, color: 'bg-orange-500/20 text-orange-400', activeBg: 'bg-black/20 text-black' }
       : undefined as any,
   }
 
@@ -477,9 +532,9 @@ function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, kycCount, pendingC
       {/* Nav */}
       <nav className='flex-1 px-3 py-4 space-y-1'>
         {NAV_ITEMS.map((item) => {
-          const Icon   = item.icon
+          const Icon = item.icon
           const active = tab === item.id
-          const badge  = badges[item.id]
+          const badge = badges[item.id]
 
           return (
             <button

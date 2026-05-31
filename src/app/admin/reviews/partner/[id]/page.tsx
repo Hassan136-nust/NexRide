@@ -8,7 +8,7 @@ import logo from '../../../../../../public/logo.png'
 import {
   ArrowLeft, Car, FileText, Landmark, User,
   CheckCircle, XCircle, ZoomIn, X, Clock,
-  Hash, Gauge, CreditCard, Shield, AlertTriangle
+  Hash, Gauge, CreditCard, Shield, AlertTriangle, DollarSign
 } from 'lucide-react'
 
 type PartnerData = {
@@ -26,6 +26,8 @@ type PartnerData = {
     number: string
     imageUrl?: string
     baseFare?: number
+    perKmFare?: number
+    waitingFare?: number
     status: string
     rejectionReason?: string
   } | null
@@ -60,6 +62,9 @@ export default function PartnerReviewPage() {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectSection, setRejectSection] = useState<Section | null>(null)
   const [reason, setReason] = useState('')
+  const [pricingSubmitting, setPricingSubmitting] = useState(false)
+  const [pricingRejectReason, setPricingRejectReason] = useState('')
+  const [showPricingReject, setShowPricingReject] = useState(false)
 
   const fetchPartner = async () => {
     try {
@@ -101,6 +106,23 @@ export default function PartnerReviewPage() {
     finally { setSubmitting(false) }
   }
 
+  const handlePricingAction = async (action: 'approve' | 'reject') => {
+    if (action === 'reject' && !pricingRejectReason.trim()) return
+    setPricingSubmitting(true)
+    try {
+      const res = await fetch(`/api/admin/reviews/partner/${id}/pricing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reason: pricingRejectReason }),
+      })
+      if (!res.ok) { const j = await res.json(); setError(j.message || 'Action failed'); return }
+      setShowPricingReject(false)
+      setPricingRejectReason('')
+      router.push('/')
+    } catch { setError('Something went wrong') }
+    finally { setPricingSubmitting(false) }
+  }
+
   /* ── LOADING ── */
   if (loading) return (
     <div className='h-screen bg-[#080808] flex items-center justify-center'>
@@ -124,6 +146,7 @@ export default function PartnerReviewPage() {
   )
 
   const { user, vehicle, docs, bank } = data
+  const isPricingReview = user.partnerOnboardingSteps === 6
   const allApproved =
     vehicle?.status === 'approved' &&
     docs?.status === 'approved' &&
@@ -226,8 +249,8 @@ export default function PartnerReviewPage() {
         </div>
       </header>
 
-      {/* ── BODY: 3-column grid, fills remaining height ── */}
-      <div className='flex-1 grid grid-cols-3 gap-0 overflow-hidden min-h-0'>
+      {/* ── BODY: 3 or 4-column grid depends on step ── */}
+      <div className={`flex-1 grid ${isPricingReview ? 'grid-cols-4' : 'grid-cols-3'} gap-0 overflow-hidden min-h-0`}>
 
         {/* ══ COL 1: VEHICLE ══ */}
         <motion.div
@@ -426,6 +449,83 @@ export default function PartnerReviewPage() {
             )}
           </div>
         </motion.div>
+
+        {/* ══ COL 4 (Pricing) — only shown for step 6 ══ */}
+        {isPricingReview && vehicle && (
+          <motion.div
+            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.11 }}
+            className='flex flex-col overflow-hidden'
+          >
+            <div className='shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-white/[0.07] bg-white/[0.02]'>
+              <div className='flex items-center gap-1.5 text-xs font-semibold'>
+                <DollarSign size={13} className='text-gray-400' /> Pricing
+              </div>
+              <span className='inline-flex items-center gap-1 text-[10px] bg-yellow-500/15 text-yellow-400 px-2 py-0.5 rounded-full'>
+                <Clock size={9} />Pending Review
+              </span>
+            </div>
+
+            <div className='flex-1 overflow-y-auto p-3 space-y-3'>
+              {vehicle.imageUrl && (
+                <motion.div
+                  whileHover={{ scale: 1.01 }}
+                  onClick={() => setLightbox(vehicle.imageUrl!)}
+                  className='relative rounded-xl overflow-hidden cursor-pointer group h-28 bg-white/5 border border-white/[0.07]'
+                >
+                  <img src={vehicle.imageUrl} alt='vehicle' className='w-full h-full object-cover group-hover:scale-105 transition duration-300' />
+                  <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center'>
+                    <span className='flex items-center gap-1 text-[10px] bg-black/70 border border-white/10 px-2.5 py-1 rounded-full text-gray-300'>
+                      <ZoomIn size={11} /> View
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+
+              <div className='grid grid-cols-1 gap-1.5'>
+                <Tile icon={<DollarSign size={10} />} label='Base Fare' value={`Rs. ${vehicle.baseFare ?? 0}`} />
+                <Tile icon={<Gauge size={10} />} label='Per KM Fare' value={`Rs. ${vehicle.perKmFare ?? 0} / km`} />
+                <Tile icon={<Clock size={10} />} label='Waiting Fare' value={`Rs. ${vehicle.waitingFare ?? 0} / min`} />
+              </div>
+            </div>
+
+            <div className='shrink-0 p-3 border-t border-white/[0.07] space-y-2'>
+              {showPricingReject ? (
+                <>
+                  <textarea
+                    rows={3}
+                    value={pricingRejectReason}
+                    onChange={e => setPricingRejectReason(e.target.value)}
+                    placeholder='Reason for rejection...'
+                    className='w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-gray-600 outline-none resize-none focus:border-white/30 transition'
+                  />
+                  {!pricingRejectReason.trim() && <p className='text-[10px] text-red-400'>Reason is required.</p>}
+                  <div className='flex gap-2'>
+                    <button onClick={() => setShowPricingReject(false)} className='flex-1 py-1.5 rounded-lg border border-white/10 text-xs text-gray-400 hover:text-white hover:bg-white/5 transition'>Cancel</button>
+                    <button disabled={!pricingRejectReason.trim() || pricingSubmitting} onClick={() => handlePricingAction('reject')} className='flex-1 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-40 transition'>
+                      {pricingSubmitting ? 'Rejecting...' : 'Confirm Reject'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    disabled={pricingSubmitting}
+                    onClick={() => handlePricingAction('approve')}
+                    className='w-full py-2 bg-emerald-500 text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition disabled:opacity-50 flex items-center justify-center gap-1'
+                  >
+                    <CheckCircle size={10} /> Approve Pricing
+                  </button>
+                  <button
+                    onClick={() => setShowPricingReject(true)}
+                    className='w-full py-2 rounded-lg border border-red-500/20 text-red-400 text-[10px] font-semibold hover:bg-red-500/5 transition flex items-center justify-center gap-1'
+                  >
+                    <XCircle size={10} /> Reject
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
 
       </div>
     </div>

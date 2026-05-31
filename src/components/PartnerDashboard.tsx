@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/redux/store'
+import PricingModal from './PricingModal'
 
 type StepStatus = "completed" | "active" | "locked" | "rejected"
 
@@ -36,6 +37,8 @@ export default function PartnerDashboard() {
   const [docsReason, setDocsReason] = useState<string>("")
   const [bankReason, setBankReason] = useState<string>("")
   const [fetching, setFetching] = useState(true)
+
+  const [showPricing, setShowPricing] = useState(false)
 
   useEffect(() => {
     const fetchStatuses = async () => {
@@ -207,6 +210,10 @@ export default function PartnerDashboard() {
               whileTap={status !== "locked" ? { scale: 0.985 } : {}}
               onClick={() => {
                 if (status === "locked") return
+                if (step.id === 6) {
+                  setShowPricing(true)
+                  return
+                }
                 if (step.route !== "#") router.push(step.route)
               }}
               className={`relative p-4 rounded-2xl border cursor-pointer transition-all duration-300 flex flex-col justify-between min-h-[140px]
@@ -286,6 +293,14 @@ export default function PartnerDashboard() {
           )
         })}
       </div>
+      <PricingModal
+        isOpen={showPricing}
+        onClose={() => setShowPricing(false)}
+        onSuccess={() => {
+          setShowPricing(false)
+          window.location.reload()
+        }}
+      />
     </div>
   )
 }

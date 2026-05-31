@@ -63,7 +63,18 @@ export async function GET(req: NextRequest) {
       _id: String(p._id),
       name: p.name,
       email: p.email,
-      vehicleType: vehicleTypeMap.get(String(p._id)) ?? null, // if not found, it's fine
+      vehicleType: vehicleTypeMap.get(String(p._id)) ?? null,
+      partnerOnboardingSteps: p.partnerOnboardingSteps,
+    }))
+
+    // Fetch partners waiting for Pricing review (step 6):
+    const pricingUsers = await User.find({ partnerStatus: "onboarding", partnerOnboardingSteps: 6 }).lean()
+
+    const pricingReviews = pricingUsers.map((p) => ({
+      _id: String(p._id),
+      name: p.name,
+      email: p.email,
+      vehicleType: vehicleTypeMap.get(String(p._id)) ?? null,
       partnerOnboardingSteps: p.partnerOnboardingSteps,
     }))
 
@@ -77,6 +88,7 @@ export async function GET(req: NextRequest) {
       totalRejectedPartners,
       pendingPartnerReviews,
       kycReviews,
+      pricingReviews,
       pendingVehiclesCount,
     })
   } catch (error) {
