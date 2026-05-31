@@ -67,6 +67,9 @@ export async function GET(req: NextRequest) {
       partnerOnboardingSteps: p.partnerOnboardingSteps,
     }))
 
+    // Pending vehicles (not yet approved)
+    const pendingVehiclesCount = await Vehicle.countDocuments({ status: "pending" })
+
     return NextResponse.json({
       totalPartners,
       totalApprovedPartners,
@@ -74,6 +77,7 @@ export async function GET(req: NextRequest) {
       totalRejectedPartners,
       pendingPartnerReviews,
       kycReviews,
+      pendingVehiclesCount,
     })
   } catch (error) {
     console.error("Admin dashboard error:", error)

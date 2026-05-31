@@ -33,6 +33,7 @@ type DashboardData = {
   totalRejectedPartners: number
   pendingPartnerReviews: PartnerReview[]
   kycReviews: PartnerReview[]
+  pendingVehiclesCount: number
 }
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -91,7 +92,11 @@ export default function AdminDashboard() {
 
       {/* DESKTOP SIDEBAR */}
       <aside className='hidden md:flex flex-col w-60 border-r border-white/10 shrink-0'>
-        <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout} />
+        <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout}
+          kycCount={data?.kycReviews?.length ?? 0}
+          pendingCount={data?.pendingPartnerReviews?.length ?? 0}
+          vehiclesCount={data?.pendingVehiclesCount ?? 0}
+        />
       </aside>
 
       {/* MOBILE SIDEBAR OVERLAY */}
@@ -112,7 +117,12 @@ export default function AdminDashboard() {
               transition={{ type: 'tween', duration: 0.22 }}
               className='fixed left-0 top-0 h-full w-60 bg-[#0e0e0e] border-r border-white/10 z-50 md:hidden'
             >
-              <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout} mobile />
+              <Sidebar tab={tab} setTab={setTab} setSidebarOpen={setSidebarOpen} handleLogout={handleLogout}
+                kycCount={data?.kycReviews?.length ?? 0}
+                pendingCount={data?.pendingPartnerReviews?.length ?? 0}
+                vehiclesCount={data?.pendingVehiclesCount ?? 0}
+                mobile
+              />
             </motion.aside>
           </>
         )}
@@ -346,13 +356,6 @@ export default function AdminDashboard() {
                 </motion.div>
               )}
 
-              {/* ── KYC TAB ── */}
-              {tab === 'kyc' && (
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                  <EmptyState icon={Shield} title='KYC Review' message='KYC document review panel is coming soon.' />
-                </motion.div>
-              )}
-
               {/* ── VEHICLES TAB ── */}
               {tab === 'vehicles' && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
@@ -434,10 +437,32 @@ interface SidebarProps {
   setTab: (tab: Tab) => void
   setSidebarOpen: (open: boolean) => void
   handleLogout: () => void
+  kycCount: number
+  pendingCount: number
+  vehiclesCount: number
   mobile?: boolean
 }
 
-function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, mobile = false }: SidebarProps) {
+function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, kycCount, pendingCount, vehiclesCount, mobile = false }: SidebarProps) {
+
+  // total pending across all actionable tabs — shown on Overview
+  const totalPending = pendingCount + kycCount + vehiclesCount
+
+  const badges: Partial<Record<Tab, { count: number; color: string; activeBg: string }>> = {
+    overview: totalPending > 0
+      ? { count: totalPending, color: 'bg-white/15 text-white',         activeBg: 'bg-black/20 text-black' }
+      : undefined as any,
+    partners: pendingCount > 0
+      ? { count: pendingCount, color: 'bg-yellow-500/20 text-yellow-400', activeBg: 'bg-black/20 text-black' }
+      : undefined as any,
+    kyc: kycCount > 0
+      ? { count: kycCount,     color: 'bg-blue-500/20 text-blue-400',    activeBg: 'bg-black/20 text-black' }
+      : undefined as any,
+    vehicles: vehiclesCount > 0
+      ? { count: vehiclesCount, color: 'bg-orange-500/20 text-orange-400', activeBg: 'bg-black/20 text-black' }
+      : undefined as any,
+  }
+
   return (
     <div className={`flex flex-col h-full ${mobile ? '' : 'w-60'}`}>
       {/* Logo */}
@@ -452,8 +477,10 @@ function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, mobile = false }: 
       {/* Nav */}
       <nav className='flex-1 px-3 py-4 space-y-1'>
         {NAV_ITEMS.map((item) => {
-          const Icon = item.icon
+          const Icon   = item.icon
           const active = tab === item.id
+          const badge  = badges[item.id]
+
           return (
             <button
               key={item.id}
@@ -465,8 +492,21 @@ function Sidebar({ tab, setTab, setSidebarOpen, handleLogout, mobile = false }: 
                 }`}
             >
               <Icon size={16} />
-              {item.label}
-              {active && <ChevronRight size={14} className='ml-auto' />}
+              <span className='flex-1 text-left'>{item.label}</span>
+
+              {/* notification badge */}
+              {badge && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className={`text-[10px] font-bold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1
+                    ${active ? badge.activeBg : badge.color}`}
+                >
+                  {badge.count}
+                </motion.span>
+              )}
+
+              {active && !badge && <ChevronRight size={14} className='ml-auto' />}
             </button>
           )
         })}

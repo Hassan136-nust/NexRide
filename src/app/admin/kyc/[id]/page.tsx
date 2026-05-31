@@ -1,10 +1,9 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ZegoUIKitPrebuilt } from '@zegocloud/zego-uikit-prebuilt'
 import { CheckCircle, XCircle, ArrowLeft } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminKycRoom() {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -84,7 +83,7 @@ export default function AdminKycRoom() {
             <div className='w-80 flex flex-col border-l border-white/10 shrink-0'>
 
                 <header className='p-5 border-b border-white/10'>
-                    <button onClick={() => router.push('/admin/dashboard')} className='text-xs text-gray-400 hover:text-white flex items-center gap-1.5 mb-3 transition'>
+                    <button onClick={() => router.push('/')} className='text-xs text-gray-400 hover:text-white flex items-center gap-1.5 mb-3 transition'>
                         <ArrowLeft size={13} /> Back to Dashboard
                     </button>
                     <h2 className='text-lg font-bold'>Video KYC Review</h2>
