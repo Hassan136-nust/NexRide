@@ -56,12 +56,24 @@ export async function GET(req: NextRequest) {
       partnerOnboardingSteps: p.partnerOnboardingSteps,
     }))
 
+    // Fetch partners waiting for KYC:
+    const kycUsers = await User.find({ partnerStatus: "onboarding", partnerOnboardingSteps: 4 }).lean()
+
+    const kycReviews = kycUsers.map((p) => ({
+      _id: String(p._id),
+      name: p.name,
+      email: p.email,
+      vehicleType: vehicleTypeMap.get(String(p._id)) ?? null, // if not found, it's fine
+      partnerOnboardingSteps: p.partnerOnboardingSteps,
+    }))
+
     return NextResponse.json({
       totalPartners,
       totalApprovedPartners,
       totalPendingPartners,
       totalRejectedPartners,
       pendingPartnerReviews,
+      kycReviews,
     })
   } catch (error) {
     console.error("Admin dashboard error:", error)

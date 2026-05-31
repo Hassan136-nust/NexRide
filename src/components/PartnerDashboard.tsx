@@ -76,7 +76,7 @@ export default function PartnerDashboard() {
     { id: 2, title: "Identity Docs", icon: FileText, route: "/partner/onboarding/documents" },
     { id: 3, title: "Bank Details", icon: Banknote, route: "/partner/onboarding/bank" },
     { id: 4, title: "Admin Review", icon: Eye, route: "#" },
-    { id: 5, title: "Video KYC", icon: Video, route: "#" },
+    { id: 5, title: "Video KYC", icon: Video, route: "/partner/kyc" },
     { id: 6, title: "Pricing Plans", icon: DollarSign, route: "#" },
     { id: 7, title: "Final Review", icon: CheckCircle2, route: "#" },
     { id: 8, title: "Go Live", icon: Rocket, route: "#" },

@@ -32,6 +32,7 @@ type DashboardData = {
   totalPendingPartners: number
   totalRejectedPartners: number
   pendingPartnerReviews: PartnerReview[]
+  kycReviews: PartnerReview[]
 }
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -267,6 +268,51 @@ export default function AdminDashboard() {
                     <PartnerTable reviews={data.pendingPartnerReviews.slice(0, 5)} onReview={(id) => router.push(`/admin/reviews/partner/${id}`)} />
                   </div>
 
+                </motion.div>
+              )}
+
+              {/* ── KYC TAB ── */}
+              {tab === 'kyc' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='space-y-5'>
+                  <div className='p-5 rounded-2xl border border-white/10 bg-white/[0.03] space-y-2'>
+                    <h2 className='text-lg font-semibold text-white'>Video KYC Verification</h2>
+                    <p className='text-sm text-gray-400'>
+                      Partners who have passed document review but are waiting to complete their face-to-face video KYC.
+                    </p>
+                  </div>
+
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-white/10 flex items-center justify-between'>
+                      <h2 className='text-sm font-medium text-gray-300'>
+                        Pending Video KYC
+                        <span className='ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full'>
+                          {data.kycReviews?.length || 0}
+                        </span>
+                      </h2>
+                    </div>
+                    {data.kycReviews && data.kycReviews.length > 0 ? (
+                      <div className='divide-y divide-white/5'>
+                        {data.kycReviews.map((partner) => (
+                          <div key={partner._id} className='flex items-center justify-between p-4 hover:bg-white/[0.02] transition'>
+                            <div>
+                              <p className='text-sm font-semibold'>{partner.name}</p>
+                              <p className='text-xs text-gray-400'>{partner.email}</p>
+                            </div>
+                            <button
+                              onClick={() => router.push(`/admin/kyc/${partner._id}`)}
+                              className='px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition'
+                            >
+                              Start Video KYC
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='p-8 text-center text-sm text-gray-500'>
+                        No partners in KYC queue
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
 
