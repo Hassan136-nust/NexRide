@@ -11,6 +11,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import GeoUpdater from "@/components/GeoUpdater";
+
 
 // Map of completed steps → next onboarding route
 const ONBOARDING_ROUTES: Record<number, string> = {
@@ -67,6 +69,11 @@ export default function Home() {
 
   return (
     <div className="w-full min-h-screen bg-white">
+
+{userData?._id && (
+  <GeoUpdater userId={userData._id.toString()} />
+)}
+
       <Nav onLoginClick={openLogin} onSignupClick={openSignup} />
       {renderContent()}
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} initialStep={authStep} />
