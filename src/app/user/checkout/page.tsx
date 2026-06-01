@@ -89,11 +89,8 @@ function CheckoutPageContent() {
       }
       const data = await response.json()
 
-      if (paymentMethod === 'card' && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
-        return
-      }
-
+      // Card payment is deferred — no Stripe redirect at booking time.
+      // User will pay after the ride is completed from the bookings page.
       setSuccess(true)
       setTimeout(() => {
         router.push('/user/bookings')
@@ -248,10 +245,10 @@ function CheckoutPageContent() {
               {bookingLoading ? (
                 <>
                   <span className='h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white' />
-                  {paymentMethod === 'card' ? 'Opening Stripe...' : 'Requesting Ride...'}
+                  Requesting Ride...
                 </>
               ) : (
-                paymentMethod === 'card' ? 'Pay with Stripe' : 'Request Booking'
+                paymentMethod === 'card' ? 'Book & Pay Later' : 'Request Booking'
               )}
             </button>
           </div>

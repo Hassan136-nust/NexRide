@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
 
             if (session.payment_status === 'paid') {
                 await connectDb()
+                // Only update payment status — booking status stays as-is (completed)
                 await Booking.findByIdAndUpdate(bookingId, {
-                    status: 'requested',
                     paymentStatus: 'paid',
                     stripeSessionId: sessionId,
                     stripePaymentIntentId: session.payment_intent as string || '',

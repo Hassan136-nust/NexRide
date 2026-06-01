@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import connectDb from '@/lib/db'
 import User from '@/models/user.model'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Booking from '@/models/booking.model'
 import {
   etaMinutesFromKm,
   estimateTripFare,
@@ -82,6 +84,32 @@ export async function GET(req: NextRequest) {
           'vehicles.type': type,
           'vehicles.status': 'approved',
           'vehicles.isActive': true,
+        },
+      },
+      // Exclude partners who are currently on an active ride
+      {
+        $lookup: {
+          from: 'bookings',
+          let: { partnerId: '$_id', vehicleId: '$vehicles._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$partner', '$$partnerId'] },
+                    { $in: ['$status', ['confirmed', 'started']] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: 'activeBookings',
+        },
+      },
+      {
+        $match: {
+          activeBookings: { $eq: [] },
         },
       },
       {

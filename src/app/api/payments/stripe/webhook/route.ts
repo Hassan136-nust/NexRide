@@ -35,14 +35,14 @@ export async function POST(req: NextRequest) {
 
         await connectDb()
 
+        // Payment happens post-ride, so only update paymentStatus — leave booking status untouched
         await Booking.findByIdAndUpdate(bookingId, {
-            status: session.payment_status === 'paid' ? 'requested' : 'cancelled',
             paymentStatus: session.payment_status === 'paid' ? 'paid' : 'failed',
             stripeSessionId: session.id,
             stripePaymentIntentId: session.payment_intent as string || '',
         })
 
-        console.log(`[Stripe Webhook] Booking ${bookingId} updated to status: requested`)
+        console.log(`[Stripe Webhook] Booking ${bookingId} paymentStatus updated`)
     }
 
     if (event.type === 'checkout.session.expired' || event.type === 'payment_intent.payment_failed') {
@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
         const bookingId = session.metadata?.bookingId
         if (bookingId) {
             await connectDb()
+            // Only mark payment as failed — don't cancel the booking (ride is already completed)
             await Booking.findByIdAndUpdate(bookingId, {
-                status: 'cancelled',
                 paymentStatus: 'failed',
             })
         }

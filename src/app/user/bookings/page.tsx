@@ -20,6 +20,7 @@ import {
     Scooter,
     Truck,
     XCircle,
+    Loader2,
 } from 'lucide-react'
 
 const PartnerRouteMap = dynamic(
@@ -106,6 +107,7 @@ interface BookingLog {
     paymentMethod: string
     vehicleModel?: string
     vehicleNumber?: string
+    stripeSessionId?: string
     createdAt: string
     updatedAt: string
 }
@@ -116,8 +118,11 @@ const GROUPS = [
     { id: 'completed', label: 'Completed', statuses: ['completed', 'cancelled', 'rejected', 'expired'] },
 ] as const
 
-function groupFor(status: BookingStatus) {
-    return GROUPS.find((group) => group.statuses.includes(status))?.id ?? 'completed'
+function groupFor(status: BookingStatus): string {
+    const found = GROUPS.find((group) => {
+        return (group.statuses as unknown as string[]).includes(status)
+    })
+    return found?.id ?? 'completed'
 }
 
 export default function UserBookingsPage() {
@@ -220,7 +225,11 @@ export default function UserBookingsPage() {
                 ) : (
                     <div className='grid gap-4 lg:grid-cols-2'>
                         {visibleBookings.map((booking) => (
-                            <BookingCard key={`${booking._id}-${booking.status}-${booking.updatedAt}`} booking={booking} />
+                            <BookingCard
+                                key={`${booking._id}-${booking.status}-${booking.updatedAt}`}
+                                booking={booking}
+                                onPaymentStarted={() => fetchBookings(false)}
+                            />
                         ))}
                     </div>
                 )}
@@ -229,7 +238,7 @@ export default function UserBookingsPage() {
     )
 }
 
-function BookingCard({ booking }: { booking: BookingLog }) {
+function BookingCard({ booking, onPaymentStarted }: { booking: BookingLog; onPaymentStarted?: () => void }) {
     const VehicleIcon = VEHICLE_ICONS[booking.vehicleType] || Car
     const Badge = STATUS_BADGES[booking.status] || STATUS_BADGES.requested
     const BadgeIcon = Badge.icon
@@ -240,6 +249,44 @@ function BookingCard({ booking }: { booking: BookingLog }) {
         minute: '2-digit',
     })
     const driverName = booking.partner?.name || (booking.status === 'requested' ? 'Waiting for driver' : 'Driver')
+
+    const [paying, setPaying] = React.useState(false)
+    const [payError, setPayError] = React.useState('')
+
+    // Only consider truly paid if paymentStatus is 'paid' AND there's a valid Stripe session
+    const isPaid =
+        booking.status === 'completed' &&
+        booking.paymentMethod === 'card' &&
+        booking.paymentStatus === 'paid' &&
+        Boolean(booking.stripeSessionId)
+
+    // Show Pay Now for all completed card bookings that aren't genuinely paid
+    const showPayButton =
+        booking.status === 'completed' &&
+        booking.paymentMethod === 'card' &&
+        !isPaid
+
+    const handlePay = async () => {
+        setPaying(true)
+        setPayError('')
+        try {
+            const res = await fetch('/api/payments/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: booking._id }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
+            if (data.checkoutUrl) {
+                onPaymentStarted?.()
+                window.location.href = data.checkoutUrl
+            }
+        } catch (err: unknown) {
+            setPayError(err instanceof Error ? err.message : 'Payment failed')
+        } finally {
+            setPaying(false)
+        }
+    }
 
     return (
         <article className='overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition hover:border-white/15'>
@@ -282,6 +329,42 @@ function BookingCard({ booking }: { booking: BookingLog }) {
                     <Metric label='Distance' value={`${booking.distanceKm.toFixed(1)} km`} icon={<Compass size={11} />} />
                     <Metric label='Time' value={`${booking.durationMin.toFixed(0)} min`} icon={<Clock size={11} />} />
                 </div>
+
+                {/* Payment status & Pay Now button for completed card bookings */}
+                {booking.paymentMethod === 'card' && booking.status === 'completed' && (
+                    <div className='border-t border-white/[0.05] pt-3 space-y-2.5'>
+                        {isPaid ? (
+                            <div className='flex items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 py-2 text-xs font-bold text-emerald-400'>
+                                <CheckCircle size={13} />
+                                Paid via Stripe
+                            </div>
+                        ) : showPayButton ? (
+                            <>
+                                {payError && (
+                                    <p className='text-center text-[10px] font-semibold text-red-400'>{payError}</p>
+                                )}
+                                <button
+                                    type='button'
+                                    onClick={handlePay}
+                                    disabled={paying}
+                                    className='w-full rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-lg hover:from-sky-400 hover:to-indigo-500 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2'
+                                >
+                                    {paying ? (
+                                        <>
+                                            <Loader2 size={13} className='animate-spin' />
+                                            Opening Stripe...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard size={13} />
+                                            Pay Now — Rs {booking.estimatedFare.toLocaleString()}
+                                        </>
+                                    )}
+                                </button>
+                            </>
+                        ) : null}
+                    </div>
+                )}
             </div>
         </article>
     )

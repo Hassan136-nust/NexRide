@@ -4,7 +4,6 @@ import connectDb from '@/lib/db'
 import Booking from '@/models/booking.model'
 import { IBooking } from '@/models/booking.model'
 import User from '@/models/user.model'
-import { createStripeCheckoutSession } from '@/lib/stripe'
 
 const OPEN_BOOKING_STATUSES = ['requested', 'awaiting_payment', 'confirmed', 'started'] as const
 
@@ -64,6 +63,8 @@ export async function POST(req: NextRequest) {
 
         const isOnlinePayment = paymentMethod === 'card'
 
+        // Card payments are deferred until ride completion.
+        // Booking always starts as 'requested' regardless of payment method.
         const booking = await Booking.create({
             user: sessionUser.id,
             partner: partnerId || null,
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
             estimatedFare,
             distanceKm: distanceKm || 0,
             durationMin: durationMin || 0,
-            status: isOnlinePayment ? 'awaiting_payment' : 'requested',
+            status: 'requested',
             paymentStatus: isOnlinePayment ? 'pending' : 'cash',
             paymentMethod: paymentMethod || 'cash',
             passengerPhone: resolvedPassengerPhone,
@@ -88,43 +89,11 @@ export async function POST(req: NextRequest) {
             vehicleNumber: vehicleNumber || '',
         })
 
-        if (isOnlinePayment) {
-            try {
-                console.log('[Stripe] Creating checkout session for booking:', booking._id.toString())
-
-                const checkoutUrl = await createStripeCheckoutSession({
-                    amount: estimatedFare,
-                    currency: 'pkr',
-                    bookingId: booking._id.toString(),
-                })
-
-                console.log('[Stripe] Checkout session created successfully')
-
-                return NextResponse.json({
-                    success: true,
-                    message: 'Redirecting to Stripe checkout',
-                    booking,
-                    checkoutUrl,
-                })
-            } catch (error) {
-                console.error('[Stripe] Checkout session creation failed:', error)
-
-                booking.paymentStatus = 'failed'
-                booking.status = 'cancelled'
-                await booking.save()
-
-                return NextResponse.json(
-                    {
-                        error: error instanceof Error ? error.message : 'Stripe checkout failed',
-                    },
-                    { status: 502 }
-                )
-            }
-        }
-
         return NextResponse.json({
             success: true,
-            message: 'Booking request created successfully',
+            message: isOnlinePayment
+                ? 'Booking request created. You can pay online after your ride is completed.'
+                : 'Booking request created successfully',
             booking,
         })
     } catch (error) {
