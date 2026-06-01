@@ -13,13 +13,17 @@ import {
   Navigation,
   Package,
   Phone,
+  RefreshCw,
   Route,
   Scooter,
   Truck,
+  Users,
 } from 'lucide-react'
 import { forwardGeocode, reverseGeocode } from '@/lib/photon'
 import { fetchDrivingRoute } from '@/lib/routing'
 import type { RidePoint, RouteStats } from '@/components/SearchMap'
+import NearbyPartnerCard from '@/components/NearbyPartnerCard'
+import type { NearbyPartner } from '@/types/nearby'
 
 const SearchMap = dynamic(() => import('@/components/SearchMap'), {
   ssr: false,
@@ -63,6 +67,9 @@ function SearchPageContent() {
   const [pickup, setPickup] = useState<RidePoint | null>(null)
   const [dropoff, setDropoff] = useState<RidePoint | null>(null)
   const [route, setRoute] = useState<RouteStats | null>(null)
+  const [nearbyPartners, setNearbyPartners] = useState<NearbyPartner[]>([])
+  const [nearbyLoading, setNearbyLoading] = useState(false)
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null)
 
   const loadRoute = useCallback(
     async (pick: RidePoint, drop: RidePoint) => {
@@ -70,11 +77,45 @@ function SearchPageContent() {
       try {
         const result = await fetchDrivingRoute(pick, drop)
         setRoute(result)
+        return result
       } finally {
         setRouteLoading(false)
       }
     },
     []
+  )
+
+  const fetchNearby = useCallback(
+    async (pick: RidePoint, tripKm?: number) => {
+      setNearbyLoading(true)
+      try {
+        const params = new URLSearchParams({
+          lat: String(pick.lat),
+          lng: String(pick.lng),
+          type: vehicle,
+          radiusKm: '5',
+        })
+        if (tripKm != null && tripKm > 0) {
+          params.set('tripKm', String(tripKm))
+        }
+        const res = await fetch(`/api/vehicles/nearby?${params}`)
+        if (!res.ok) throw new Error('Failed to load nearby partners')
+        const data = await res.json()
+        const list: NearbyPartner[] = data.partners ?? []
+        setNearbyPartners(list)
+        setSelectedPartnerId((prev) =>
+          prev && list.some((p) => p.partnerId === prev)
+            ? prev
+            : list[0]?.partnerId ?? null
+        )
+      } catch {
+        setNearbyPartners([])
+        setSelectedPartnerId(null)
+      } finally {
+        setNearbyLoading(false)
+      }
+    },
+    [vehicle]
   )
 
   useEffect(() => {
@@ -125,7 +166,8 @@ function SearchPageContent() {
         if (cancelled) return
         setPickup(pick)
         setDropoff(drop)
-        await loadRoute(pick, drop)
+        const routeResult = await loadRoute(pick, drop)
+        await fetchNearby(pick, routeResult?.distanceKm)
       } catch (e) {
         if (!cancelled) {
           setInitError(
@@ -172,12 +214,14 @@ function SearchPageContent() {
         const updated = { ...point, label }
         setPickup(updated)
         syncUrl(updated, dropoff)
-        await loadRoute(updated, dropoff)
+        const routeResult = await loadRoute(updated, dropoff)
+        await fetchNearby(updated, routeResult?.distanceKm)
       } catch {
-        await loadRoute(point, dropoff)
+        const routeResult = await loadRoute(point, dropoff)
+        await fetchNearby(point, routeResult?.distanceKm)
       }
     },
-    [dropoff, loadRoute, syncUrl]
+    [dropoff, loadRoute, syncUrl, fetchNearby]
   )
 
   const handleDropoffMoved = useCallback(
@@ -190,13 +234,22 @@ function SearchPageContent() {
         const updated = { ...point, label }
         setDropoff(updated)
         syncUrl(pickup, updated)
-        await loadRoute(pickup, updated)
+        const routeResult = await loadRoute(pickup, updated)
+        if (pickup) await fetchNearby(pickup, routeResult?.distanceKm)
       } catch {
         await loadRoute(pickup, point)
       }
     },
-    [pickup, loadRoute, syncUrl]
+    [pickup, loadRoute, syncUrl, fetchNearby]
   )
+
+  useEffect(() => {
+    if (!pickup) return
+    const interval = setInterval(() => {
+      fetchNearby(pickup, route?.distanceKm)
+    }, 20000)
+    return () => clearInterval(interval)
+  }, [pickup, route?.distanceKm, fetchNearby])
 
   const VehicleIcon = VEHICLE_META[vehicle]?.icon ?? Car
   const vehicleLabel = VEHICLE_META[vehicle]?.label ?? vehicle
@@ -258,84 +311,151 @@ function SearchPageContent() {
         </div>
       </header>
 
-      <div className='no-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4 sm:px-7 sm:py-5'>
-        <section className='h-[min(52vh,420px)] shrink-0'>
+      <div className='flex flex-col-reverse lg:flex-row flex-1 min-h-0 overflow-hidden relative'>
+        {/* Left/Bottom Details Sidebar */}
+        <div className='w-full lg:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[55dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
+          <div className='no-scrollbar flex-1 overflow-y-auto p-5 sm:p-6 space-y-6'>
+            <section className='space-y-3.5'>
+              <div className='flex items-center justify-between gap-3'>
+                <div>
+                  <h2 className='flex items-center gap-2 text-sm font-black text-white'>
+                    <Users size={16} className='text-emerald-400' />
+                    Available nearby
+                  </h2>
+                  <p className='mt-0.5 text-[11px] text-zinc-500'>
+                    Verified partners with GPS within 5 km of pickup
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  disabled={nearbyLoading}
+                  onClick={() => fetchNearby(pickup, route?.distanceKm)}
+                  className='flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold text-white transition hover:bg-white/10 disabled:opacity-50'
+                >
+                  <RefreshCw
+                    size={12}
+                    className={nearbyLoading ? 'animate-spin' : ''}
+                  />
+                  Refresh
+                </button>
+              </div>
+
+              {nearbyLoading && nearbyPartners.length === 0 ? (
+                <div className='flex items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] py-10'>
+                  <span className='h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white' />
+                  <span className='text-sm text-zinc-400'>
+                    Scanning for nearby rides…
+                  </span>
+                </div>
+              ) : nearbyPartners.length === 0 ? (
+                <div className='rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-8 text-center'>
+                  <p className='text-sm font-semibold text-zinc-300'>
+                    No partners online nearby
+                  </p>
+                  <p className='mt-1 text-[11.5px] leading-relaxed text-zinc-500'>
+                    Partner must be verified, have an approved vehicle matching your
+                    ride type, real GPS (not 0,0), and be within 5 km. Open the
+                    partner account in the browser with location allowed so the app
+                    can send live coordinates.
+                  </p>
+                </div>
+              ) : (
+                <div className='flex flex-col gap-3.5 pr-1'>
+                  {nearbyPartners.map((partner) => (
+                    <NearbyPartnerCard
+                      key={partner.partnerId}
+                      partner={partner}
+                      selected={selectedPartnerId === partner.partnerId}
+                      onSelect={() => setSelectedPartnerId(partner.partnerId)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className='space-y-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4'
+            >
+              <h2 className='text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500'>
+                Ride summary
+              </h2>
+
+              <div className='grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-1'>
+                <SummaryRow
+                  icon={<VehicleIcon size={16} className='text-white' />}
+                  label='Service'
+                  value={vehicleLabel}
+                />
+                <SummaryRow
+                  icon={<Phone size={16} className='text-emerald-400' />}
+                  label='Contact'
+                  value={phone || '—'}
+                />
+                <SummaryRow
+                  icon={<Route size={16} className='text-emerald-400' />}
+                  label='Distance'
+                  value={
+                    routeLoading
+                      ? 'Updating…'
+                      : route
+                        ? `${route.distanceKm} km`
+                        : '—'
+                  }
+                />
+                <SummaryRow
+                  icon={<Clock size={16} className='text-sky-400' />}
+                  label='Est. ride time'
+                  value={
+                    routeLoading
+                      ? 'Updating…'
+                      : route
+                        ? `${route.durationMin} min`
+                        : '—'
+                  }
+                />
+              </div>
+
+              <div className='space-y-2.5 border-t border-white/[0.06] pt-3.5'>
+                <LocationRow
+                  color='bg-amber-500'
+                  title='Pickup'
+                  address={pickup.label}
+                />
+                <LocationRow
+                  color='bg-sky-500'
+                  title='Dropoff'
+                  address={dropoff.label}
+                />
+              </div>
+
+              <button
+                type='button'
+                onClick={() => router.push('/user/book')}
+                className='mt-2.5 w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-white transition hover:bg-white/10'
+              >
+                Edit booking details
+              </button>
+            </motion.section>
+          </div>
+        </div>
+
+        {/* Right/Top Map Section */}
+        <div className='flex-1 h-[45dvh] lg:h-full relative p-3 lg:p-4 bg-zinc-950/20'>
           <SearchMap
             pickup={pickup}
             dropoff={dropoff}
             route={route}
             routeLoading={routeLoading}
+            nearbyPartners={nearbyPartners}
+            selectedPartnerId={selectedPartnerId}
+            onPartnerSelect={(p) => setSelectedPartnerId(p.partnerId)}
             onPickupMoved={handlePickupMoved}
             onDropoffMoved={handleDropoffMoved}
           />
-        </section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className='shrink-0 space-y-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 sm:p-5'
-        >
-          <h2 className='text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500'>
-            Ride summary
-          </h2>
-
-          <div className='grid gap-3 sm:grid-cols-2'>
-            <SummaryRow
-              icon={<VehicleIcon size={16} className='text-white' />}
-              label='Service'
-              value={vehicleLabel}
-            />
-            <SummaryRow
-              icon={<Phone size={16} className='text-emerald-400' />}
-              label='Contact'
-              value={phone || '—'}
-            />
-            <SummaryRow
-              icon={<Route size={16} className='text-emerald-400' />}
-              label='Distance'
-              value={
-                routeLoading
-                  ? 'Updating…'
-                  : route
-                    ? `${route.distanceKm} km`
-                    : '—'
-              }
-            />
-            <SummaryRow
-              icon={<Clock size={16} className='text-sky-400' />}
-              label='Est. ride time'
-              value={
-                routeLoading
-                  ? 'Updating…'
-                  : route
-                    ? `${route.durationMin} min`
-                    : '—'
-              }
-            />
-          </div>
-
-          <div className='space-y-2 border-t border-white/[0.06] pt-3'>
-            <LocationRow
-              color='bg-amber-500'
-              title='Pickup'
-              address={pickup.label}
-            />
-            <LocationRow
-              color='bg-sky-500'
-              title='Dropoff'
-              address={dropoff.label}
-            />
-          </div>
-
-          <button
-            type='button'
-            onClick={() => router.push('/user/book')}
-            className='mt-2 w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-white transition hover:bg-white/10'
-          >
-            Edit booking details
-          </button>
-        </motion.section>
+        </div>
       </div>
     </PageShell>
   )

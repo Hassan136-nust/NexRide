@@ -12,7 +12,8 @@
 }
 
 /* Leaflet custom pins */
-.leaflet-container .custom-map-pin {
+.leaflet-container .custom-map-pin,
+.leaflet-container .vehicle-map-pin {
   background: transparent !important;
   border: none !important;
 }

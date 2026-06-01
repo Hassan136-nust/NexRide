@@ -10,8 +10,10 @@ import {
 } from 'react-leaflet'
 import L, { type LatLngTuple } from 'leaflet'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Clock, Navigation, Route } from 'lucide-react'
+import { Clock, Navigation, Route, Users } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
+import type { NearbyPartner } from '@/types/nearby'
+import { makeVehicleMapIcon } from '@/lib/vehicleMapIcons'
 
 export interface RidePoint {
   lat: number
@@ -67,28 +69,43 @@ function makePinIcon(color: string, label: string) {
 const pickupIcon = makePinIcon('#f59e0b', 'PICKUP')
 const dropoffIcon = makePinIcon('#0ea5e9', 'DROP')
 
-function FitRouteBounds({
+function FitMapBounds({
   pickup,
   dropoff,
   route,
+  nearbyPartners = [],
 }: {
   pickup: RidePoint
   dropoff: RidePoint
   route: RouteStats | null
+  nearbyPartners?: NearbyPartner[]
 }) {
   const map = useMap()
 
   useEffect(() => {
     const points: LatLngTuple[] =
       route?.coordinates?.length && route.coordinates.length > 1
-        ? route.coordinates
+        ? [...route.coordinates]
         : [
             [pickup.lat, pickup.lng],
             [dropoff.lat, dropoff.lng],
           ]
+
+    for (const p of nearbyPartners) {
+      points.push([p.lat, p.lng])
+    }
+
     const bounds = L.latLngBounds(points)
     map.fitBounds(bounds, { padding: [56, 56], maxZoom: 15, animate: true })
-  }, [pickup.lat, pickup.lng, dropoff.lat, dropoff.lng, route, map])
+  }, [
+    pickup.lat,
+    pickup.lng,
+    dropoff.lat,
+    dropoff.lng,
+    route,
+    nearbyPartners,
+    map,
+  ])
 
   return null
 }
@@ -98,8 +115,11 @@ interface SearchMapProps {
   dropoff: RidePoint
   route: RouteStats | null
   routeLoading: boolean
+  nearbyPartners?: NearbyPartner[]
+  selectedPartnerId?: string | null
   onPickupMoved: (point: RidePoint) => void
   onDropoffMoved: (point: RidePoint) => void
+  onPartnerSelect?: (partner: NearbyPartner) => void
 }
 
 export default function SearchMap({
@@ -107,8 +127,11 @@ export default function SearchMap({
   dropoff,
   route,
   routeLoading,
+  nearbyPartners = [],
+  selectedPartnerId,
   onPickupMoved,
   onDropoffMoved,
+  onPartnerSelect,
 }: SearchMapProps) {
   const center = useMemo<LatLngTuple>(
     () => [
@@ -120,6 +143,7 @@ export default function SearchMap({
 
   const distanceKm = route?.distanceKm ?? null
   const durationMin = route?.durationMin ?? null
+  const onlineCount = nearbyPartners.length
 
   return (
     <div className='relative h-full min-h-[280px] w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-100 shadow-inner'>
@@ -137,7 +161,12 @@ export default function SearchMap({
           maxZoom={20}
         />
 
-        <FitRouteBounds pickup={pickup} dropoff={dropoff} route={route} />
+        <FitMapBounds
+          pickup={pickup}
+          dropoff={dropoff}
+          route={route}
+          nearbyPartners={nearbyPartners}
+        />
 
         {route && route.coordinates.length > 1 && (
           <Polyline
@@ -156,6 +185,7 @@ export default function SearchMap({
           position={[pickup.lat, pickup.lng]}
           icon={pickupIcon}
           draggable
+          zIndexOffset={1000}
           eventHandlers={{
             dragend: (e) => {
               const { lat, lng } = e.target.getLatLng()
@@ -168,6 +198,7 @@ export default function SearchMap({
           position={[dropoff.lat, dropoff.lng]}
           icon={dropoffIcon}
           draggable
+          zIndexOffset={1000}
           eventHandlers={{
             dragend: (e) => {
               const { lat, lng } = e.target.getLatLng()
@@ -175,9 +206,21 @@ export default function SearchMap({
             },
           }}
         />
+
+        {nearbyPartners.map((partner) => (
+          <Marker
+            key={partner.partnerId}
+            position={[partner.lat, partner.lng]}
+            icon={makeVehicleMapIcon(partner.vehicle.type)}
+            zIndexOffset={selectedPartnerId === partner.partnerId ? 900 : 500}
+            eventHandlers={{
+              click: () => onPartnerSelect?.(partner),
+            }}
+          />
+        ))}
       </MapContainer>
 
-      <div className='pointer-events-none absolute inset-x-0 top-0 z-[1000] flex justify-center p-3'>
+      <div className='pointer-events-none absolute inset-x-0 top-0 z-[1000] flex flex-col items-center gap-2 p-3'>
         <AnimatePresence mode='wait'>
           {routeLoading ? (
             <motion.div
@@ -220,12 +263,23 @@ export default function SearchMap({
             </motion.div>
           ) : null}
         </AnimatePresence>
+
+        {!routeLoading && onlineCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className='flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-bold text-emerald-200 backdrop-blur-md'
+          >
+            <Users size={13} />
+            {onlineCount} partner{onlineCount !== 1 ? 's' : ''} nearby (5 km)
+          </motion.div>
+        )}
       </div>
 
       <div className='pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-lg border border-black/10 bg-white/90 px-2.5 py-1.5 text-[10px] font-medium text-zinc-600 shadow-sm backdrop-blur-sm'>
         <span className='flex items-center gap-1'>
           <Navigation size={11} />
-          Drag pins to adjust route
+          Drag pins · tap vehicles on map
         </span>
       </div>
     </div>

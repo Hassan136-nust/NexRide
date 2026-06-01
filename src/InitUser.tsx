@@ -13,7 +13,12 @@ function InitUser() {
 
   if (!userData?._id) return null
 
-  return <GeoUpdater userId={userData._id.toString()} />
+  return (
+    <GeoUpdater
+      userId={userData._id.toString()}
+      trackLocation={userData.role === 'partner'}
+    />
+  )
 }
 
 export default InitUser

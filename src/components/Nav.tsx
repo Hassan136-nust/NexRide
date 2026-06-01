@@ -35,6 +35,13 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
     item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`
 
   const handleLogout = async () => {
+    if (userData?.role === 'partner') {
+      try {
+        await fetch('/api/partner/offline', { method: 'POST' })
+      } catch (err) {
+        console.error('Failed to go offline on logout:', err)
+      }
+    }
     dispatch(setUserData(null))
     setDropdownOpen(false)
     await signOut({ redirect: false })
@@ -67,9 +74,8 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                 <Link
                   key={index}
                   href={href}
-                  className={`text-sm font-medium transition ${
-                    active ? "text-white" : "text-gray-400 hover:text-white"
-                  }`}
+                  className={`text-sm font-medium transition ${active ? "text-white" : "text-gray-400 hover:text-white"
+                    }`}
                 >
                   {item}
                 </Link>
@@ -128,7 +134,7 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                             <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
                               ${userData.role === "partner" ? "bg-green-500/20 text-green-400" :
                                 userData.role === "admin" ? "bg-purple-500/20 text-purple-400" :
-                                "bg-white/10 text-gray-400"}`}>
+                                  "bg-white/10 text-gray-400"}`}>
                               {userData.role}
                             </span>
                           </div>
@@ -137,23 +143,23 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
 
                       {/* Become a Partner - only shown if not already a partner/admin */}
                       {userData.role === "user" && userData.partnerOnboardingSteps === 0 && (
-                      <div className='px-3 py-2.5 border-b border-white/10'>
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            setDropdownOpen(false);
-                            router.push('/partner/onboarding/vehicle');
-                          }}
-                          className='group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
+                        <div className='px-3 py-2.5 border-b border-white/10'>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              router.push('/partner/onboarding/vehicle');
+                            }}
+                            className='group w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
                           text-sm font-semibold text-white bg-white/[0.06] border border-white/10
                           hover:bg-white hover:text-black hover:border-white
                           transition-colors duration-200 shadow-sm'
-                        >
-                          <Briefcase size={16} className='transform group-hover:translate-x-1 transition-transform duration-200 cursor-pointer' />
-                          Become a Partner
-                        </motion.button>
-                      </div>
+                          >
+                            <Briefcase size={16} className='transform group-hover:translate-x-1 transition-transform duration-200 cursor-pointer' />
+                            Become a Partner
+                          </motion.button>
+                        </div>
                       )}
 
                       {/* Logout */}
@@ -220,9 +226,8 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                   key={index}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`text-sm font-medium transition ${
-                    active ? "text-white" : "text-gray-400 hover:text-white"
-                  }`}
+                  className={`text-sm font-medium transition ${active ? "text-white" : "text-gray-400 hover:text-white"
+                    }`}
                 >
                   {item}
                 </Link>
@@ -242,25 +247,25 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
                       <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize
                         ${userData.role === "partner" ? "bg-green-500/20 text-green-400" :
                           userData.role === "admin" ? "bg-purple-500/20 text-purple-400" :
-                          "bg-white/10 text-gray-400"}`}>
+                            "bg-white/10 text-gray-400"}`}>
                         {userData.role}
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Mobile Become a Partner Button */}
                   {userData.role === "user" && userData.partnerOnboardingSteps === 0 && (
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => { setMobileOpen(false); router.push('/partner/onboarding/vehicle') }}
-                    className='w-full flex items-center justify-center gap-3 px-3 py-3 rounded-xl 
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => { setMobileOpen(false); router.push('/partner/onboarding/vehicle') }}
+                      className='w-full flex items-center justify-center gap-3 px-3 py-3 rounded-xl 
                     text-sm font-semibold text-black bg-white active:bg-gray-200 transition-colors cursor-pointer'
-                  >
-                    <Briefcase size={16} />
-                    Become a Partner
-                  </motion.button>
+                    >
+                      <Briefcase size={16} />
+                      Become a Partner
+                    </motion.button>
                   )}
-                  
+
                   <button
                     onClick={() => { setMobileOpen(false); handleLogout() }}
                     className='w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-gray-400 active:text-white transition'
