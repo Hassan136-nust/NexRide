@@ -251,6 +251,31 @@ function SearchPageContent() {
     return () => clearInterval(interval)
   }, [pickup, route?.distanceKm, fetchNearby])
 
+  const handlePartnerSelect = useCallback(
+    (partner: NearbyPartner) => {
+      if (!pickup || !dropoff) return
+      const params = new URLSearchParams({
+        pickup: pickup.label,
+        pickupLat: String(pickup.lat),
+        pickupLng: String(pickup.lng),
+        dropoff: dropoff.label,
+        dropoffLat: String(dropoff.lat),
+        dropoffLng: String(dropoff.lng),
+        vehicle: vehicle,
+        phone: phone,
+        partnerId: partner.partnerId,
+        partnerName: partner.partnerName,
+        vehicleModel: partner.vehicle.vehicleModel,
+        vehicleNumber: partner.vehicle.number,
+        estimatedFare: String(partner.estimatedFare),
+        distanceKm: String(route?.distanceKm || partner.distanceKm || 0),
+        durationMin: String(route?.durationMin || partner.etaMin || 0),
+      })
+      router.push(`/user/checkout?${params.toString()}`)
+    },
+    [pickup, dropoff, vehicle, phone, route, router]
+  )
+
   const VehicleIcon = VEHICLE_META[vehicle]?.icon ?? Car
   const vehicleLabel = VEHICLE_META[vehicle]?.label ?? vehicle
 
@@ -366,7 +391,7 @@ function SearchPageContent() {
                       key={partner.partnerId}
                       partner={partner}
                       selected={selectedPartnerId === partner.partnerId}
-                      onSelect={() => setSelectedPartnerId(partner.partnerId)}
+                      onSelect={() => handlePartnerSelect(partner)}
                     />
                   ))}
                 </div>
@@ -451,7 +476,7 @@ function SearchPageContent() {
             routeLoading={routeLoading}
             nearbyPartners={nearbyPartners}
             selectedPartnerId={selectedPartnerId}
-            onPartnerSelect={(p) => setSelectedPartnerId(p.partnerId)}
+            onPartnerSelect={handlePartnerSelect}
             onPickupMoved={handlePickupMoved}
             onDropoffMoved={handleDropoffMoved}
           />

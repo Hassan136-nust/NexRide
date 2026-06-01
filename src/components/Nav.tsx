@@ -29,10 +29,17 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
   const router = useRouter()
 
   const userData = useSelector((state: RootState) => state.user.userData)
-  const Nav_Items = ["Home", "Bookings", "About Us", "Contact"]
+  const Nav_Items = userData?.role === "partner"
+    ? ["Home", "Pending Requests", "Bookings", "Active Ride"]
+    : ["Home", "Bookings", "About Us", "Contact"]
 
-  const getHref = (item: string) =>
-    item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`
+  const getHref = (item: string) => {
+    if (item === "Home") return "/"
+    if (item === "Pending Requests") return "/partner/pending-requests"
+    if (item === "Bookings") return userData?.role === "partner" ? "/partner/bookings" : "/user/bookings"
+    if (item === "Active Ride") return "/partner/active-ride"
+    return `/${item.toLowerCase().replace(/\s+/g, "-")}`
+  }
 
   const handleLogout = async () => {
     if (userData?.role === 'partner') {

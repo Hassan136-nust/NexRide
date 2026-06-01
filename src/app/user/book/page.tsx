@@ -110,6 +110,8 @@ export default function BookRidePage() {
   const [showDropoffOverlay, setShowDropoffOverlay] = useState(false)
   const [countryWarning, setCountryWarning] = useState('')
   const [loadingConfirm, setLoadingConfirm] = useState(false)
+  const [openRideLoading, setOpenRideLoading] = useState(true)
+  const [openRide, setOpenRide] = useState<{ _id: string; status: string } | null>(null)
 
   // Overlay outside click refs
   const pickupRef = useRef<HTMLDivElement>(null)
@@ -129,10 +131,30 @@ export default function BookRidePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    let alive = true
+    const checkOpenRide = async () => {
+      try {
+        const res = await fetch('/api/bookings?open=true')
+        if (!res.ok) return
+        const data = await res.json()
+        if (alive) setOpenRide(data.bookings?.[0] || null)
+      } finally {
+        if (alive) setOpenRideLoading(false)
+      }
+    }
+    checkOpenRide()
+    const iv = setInterval(checkOpenRide, 15000)
+    return () => {
+      alive = false
+      clearInterval(iv)
+    }
+  }, [])
+
   // Auto-complete fetch logic for Pickup Location
   useEffect(() => {
     if (!pickupInput || pickupInput === pickupAddress) {
-      setPickupSuggestions([])
+      queueMicrotask(() => setPickupSuggestions([]))
       return
     }
     const timer = setTimeout(async () => {
@@ -155,7 +177,7 @@ export default function BookRidePage() {
   // Auto-complete fetch logic for Dropoff Location
   useEffect(() => {
     if (!dropoffInput || dropoffInput === dropoffAddress) {
-      setDropoffSuggestions([])
+      queueMicrotask(() => setDropoffSuggestions([]))
       return
     }
     const timer = setTimeout(async () => {
@@ -208,7 +230,7 @@ export default function BookRidePage() {
             setPickupInput(altAddress)
             setPickupCountry('Global')
           }
-        } catch (err) {
+        } catch {
           const fallback = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
           setPickupAddress(fallback)
           setPickupInput(fallback)
@@ -276,10 +298,10 @@ export default function BookRidePage() {
   const stepPickupOk = !!pickupAddress
   const stepDropoffOk = !!dropoffAddress
 
-  const isFormValid = stepVehicleOk && stepPhoneOk && stepPickupOk && stepDropoffOk
+  const isFormValid = stepVehicleOk && stepPhoneOk && stepPickupOk && stepDropoffOk && !openRide
 
   const handleConfirmBooking = () => {
-    if (!isFormValid || loadingConfirm) return
+    if (!isFormValid || loadingConfirm || openRide) return
 
     setLoadingConfirm(true)
 
@@ -364,6 +386,12 @@ export default function BookRidePage() {
         </div>
 
         <div className='no-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-5 py-4 sm:px-7 sm:py-5'>
+          {openRide && (
+            <div className='shrink-0 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs font-semibold text-amber-300'>
+              You already have an active booking ({openRide.status}). View it in My Bookings before requesting another ride.
+            </div>
+          )}
+
           <section className='shrink-0 space-y-2.5'>
             <label className='flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400'>
               <span className='text-zinc-600'>01</span> Select ride category
@@ -574,11 +602,15 @@ export default function BookRidePage() {
           <div className='shrink-0 border-t border-white/[0.06] pt-4'>
             <button
               type='button'
-              disabled={!isFormValid || loadingConfirm}
+              disabled={!isFormValid || loadingConfirm || openRideLoading}
               onClick={handleConfirmBooking}
               className='flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-black text-black shadow-[0_8px_32px_-8px_rgba(255,255,255,0.35)] transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-zinc-500 disabled:shadow-none'
             >
-              {loadingConfirm ? (
+              {openRide ? (
+                <>
+                  <AlertTriangle size={16} /> Active ride in progress
+                </>
+              ) : loadingConfirm ? (
                 <>
                   <Loader2 size={16} className='animate-spin' /> Finding your ride…
                 </>

@@ -11,6 +11,16 @@
   -ms-overflow-style: none;
 }
 
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Leaflet custom pins */
 .leaflet-container .custom-map-pin,
 .leaflet-container .vehicle-map-pin {
