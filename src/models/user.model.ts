@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
+import mongoose, { Document, Model } from "mongoose";
 
 type VideoKycStatus =
   | "not_required"
@@ -14,8 +14,8 @@ export interface IUser extends Document {
 
   role: "user" | "partner" | "admin";
 
-  isEmailVerified: boolean;
-  isPartnerVerified: boolean;
+  isEmailVerified?: boolean;
+  isPartnerVerified?: boolean;
 
   otp?: string;
   otpExpires?: Date;
@@ -44,19 +44,11 @@ export interface IUser extends Document {
 
   isOnline: boolean;
 
-  currentRide?: mongoose.Types.ObjectId;
-
-  lastSeen?: Date;
-
-  avatar?: string;
-
-  phone?: string;
-
   createdAt: Date;
   updatedAt: Date;
 }
 
-const userSchema = new Schema<IUser>(
+const userSchema = new mongoose.Schema<IUser>(
   {
     name: {
       type: String,
@@ -70,19 +62,16 @@ const userSchema = new Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
 
     password: {
       type: String,
-      select: false,
     },
 
     role: {
       type: String,
       enum: ["user", "partner", "admin"],
       default: "user",
-      index: true,
     },
 
     isEmailVerified: {
@@ -113,15 +102,8 @@ const userSchema = new Schema<IUser>(
 
     partnerStatus: {
       type: String,
-      enum: [
-        "none",
-        "pending",
-        "approved",
-        "rejected",
-        "onboarding",
-      ],
+      enum: ["none", "pending", "approved", "rejected", "onboarding"],
       default: "none",
-      index: true,
     },
 
     partnerRejectionReason: {
@@ -162,7 +144,6 @@ const userSchema = new Schema<IUser>(
         enum: ["Point"],
         default: "Point",
       },
-
       coordinates: {
         type: [Number],
         default: [0, 0],
@@ -172,29 +153,6 @@ const userSchema = new Schema<IUser>(
     isOnline: {
       type: Boolean,
       default: false,
-      index: true,
-    },
-
-    currentRide: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Ride",
-      default: null,
-    },
-
-    lastSeen: {
-      type: Date,
-      default: Date.now,
-    },
-
-    avatar: {
-      type: String,
-      default: "",
-    },
-
-    phone: {
-      type: String,
-      default: "",
-      trim: true,
     },
   },
   {
@@ -202,21 +160,9 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// GEO INDEX
 userSchema.index({ location: "2dsphere" });
 
-// CLEAN JSON RESPONSE
-userSchema.set("toJSON", {
-  transform: (_, ret) => {
-    delete ret.password;
-    delete ret.otp;
-  delete (ret as { __v?: number }).__v;
-    return ret;
-  },
-});
-
 const User: Model<IUser> =
-  mongoose.models.User ||
-  mongoose.model<IUser>("User", userSchema);
+  mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 
 export default User;
