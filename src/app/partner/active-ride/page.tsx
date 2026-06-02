@@ -251,16 +251,10 @@ export default function ActiveRidePage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className='space-y-2.5'>
-                                        <button type='button' disabled={actionLoading} onClick={() => handleStatus('completed')}
-                                            className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                            {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><CheckCircle size={14} /> Complete Ride</>}
-                                        </button>
-                                        <button type='button' disabled={actionLoading} onClick={handleCancel}
-                                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-3 text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                            <XCircle size={14} /> Cancel Ride
-                                        </button>
-                                    </div>
+                                    <button type='button' disabled={actionLoading} onClick={() => handleStatus('completed')}
+                                        className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                        {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><CheckCircle size={14} /> Complete Ride</>}
+                                    </button>
                                 )}
                             </>
                         )}
