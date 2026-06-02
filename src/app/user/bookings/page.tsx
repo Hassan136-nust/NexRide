@@ -229,6 +229,7 @@ export default function UserBookingsPage() {
                                 key={`${booking._id}-${booking.status}-${booking.updatedAt}`}
                                 booking={booking}
                                 onPaymentStarted={() => fetchBookings(false)}
+                                onBookingUpdated={() => fetchBookings(true)}
                             />
                         ))}
                     </div>
@@ -238,7 +239,7 @@ export default function UserBookingsPage() {
     )
 }
 
-function BookingCard({ booking, onPaymentStarted }: { booking: BookingLog; onPaymentStarted?: () => void }) {
+function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking: BookingLog; onPaymentStarted?: () => void; onBookingUpdated?: () => void }) {
     const VehicleIcon = VEHICLE_ICONS[booking.vehicleType] || Car
     const Badge = STATUS_BADGES[booking.status] || STATUS_BADGES.requested
     const BadgeIcon = Badge.icon
@@ -252,6 +253,14 @@ function BookingCard({ booking, onPaymentStarted }: { booking: BookingLog; onPay
 
     const [paying, setPaying] = React.useState(false)
     const [payError, setPayError] = React.useState('')
+    const [cancelling, setCancelling] = React.useState(false)
+    const [cancelError, setCancelError] = React.useState('')
+
+    // Ride can be cancelled by customer only if it's in these statuses
+    const canCancel =
+        booking.status === 'requested' ||
+        booking.status === 'confirmed' ||
+        booking.status === 'awaiting_payment'
 
     // Only consider truly paid if paymentStatus is 'paid' AND there's a valid Stripe session
     const isPaid =
@@ -265,6 +274,26 @@ function BookingCard({ booking, onPaymentStarted }: { booking: BookingLog; onPay
         booking.status === 'completed' &&
         booking.paymentMethod === 'card' &&
         !isPaid
+
+    const handleCancel = async () => {
+        if (!window.confirm('Are you sure you want to cancel this ride?')) return
+        setCancelling(true)
+        setCancelError('')
+        try {
+            const res = await fetch(`/api/bookings/${booking._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'cancelled' }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Failed to cancel ride')
+            onBookingUpdated?.()
+        } catch (err: unknown) {
+            setCancelError(err instanceof Error ? err.message : 'Failed to cancel')
+        } finally {
+            setCancelling(false)
+        }
+    }
 
     const handlePay = async () => {
         setPaying(true)
@@ -329,6 +358,33 @@ function BookingCard({ booking, onPaymentStarted }: { booking: BookingLog; onPay
                     <Metric label='Distance' value={`${booking.distanceKm.toFixed(1)} km`} icon={<Compass size={11} />} />
                     <Metric label='Time' value={`${booking.durationMin.toFixed(0)} min`} icon={<Clock size={11} />} />
                 </div>
+
+                {/* Cancel Ride button for cancellable bookings */}
+                {canCancel && (
+                    <div className='border-t border-white/[0.05] pt-3 space-y-2'>
+                        {cancelError && (
+                            <p className='text-center text-[10px] font-semibold text-red-400'>{cancelError}</p>
+                        )}
+                        <button
+                            type='button'
+                            onClick={handleCancel}
+                            disabled={cancelling}
+                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-2'
+                        >
+                            {cancelling ? (
+                                <>
+                                    <Loader2 size={13} className='animate-spin' />
+                                    Cancelling...
+                                </>
+                            ) : (
+                                <>
+                                    <XCircle size={13} />
+                                    Cancel Ride
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 {/* Payment status & Pay Now button for completed card bookings */}
                 {booking.paymentMethod === 'card' && booking.status === 'completed' && (

@@ -28,13 +28,28 @@ export async function PATCH(
 
         const sessionUser = session.user as { id: string; role: string }
 
-        // If a partner calls, verify partner ownership/permissions
+        // Verify permissions based on role
         if (sessionUser.role === 'partner') {
-            // If the booking is not assigned to a partner, assign it on confirmation
             if (status === 'confirmed' && !booking.partner) {
                 booking.partner = new Types.ObjectId(sessionUser.id)
             } else if (booking.partner && booking.partner.toString() !== sessionUser.id) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            }
+        } else {
+            // Customer can only update their own bookings
+            if (booking.user.toString() !== sessionUser.id) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+            }
+
+            // Customer can only cancel rides that haven't started or completed
+            if (status === 'cancelled') {
+                const nonCancellable = ['started', 'completed', 'cancelled']
+                if (nonCancellable.includes(booking.status)) {
+                    return NextResponse.json(
+                        { error: `Cannot cancel a ride that is already ${booking.status}` },
+                        { status: 400 }
+                    )
+                }
             }
         }
 

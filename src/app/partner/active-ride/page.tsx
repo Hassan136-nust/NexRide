@@ -24,6 +24,8 @@ import {
     User,
     DollarSign,
     CreditCard,
+    XCircle,
+    Loader2,
 } from 'lucide-react'
 
 const PartnerRouteMap = dynamic(
@@ -116,7 +118,7 @@ export default function ActiveRidePage() {
         try {
             const payload: any = { status: next }
             if (next === 'completed') {
-                payload.paymentStatus = booking.paymentMethod === 'cash' ? 'cash' : 'paid'
+                payload.paymentStatus = booking.paymentMethod === 'cash' ? 'cash' : 'pending'
             }
             const res = await fetch(`/api/bookings/${booking._id}`, {
                 method: 'PATCH',
@@ -126,6 +128,29 @@ export default function ActiveRidePage() {
             if (!res.ok) throw new Error((await res.json()).error || 'Failed')
             if (next === 'completed') router.push('/partner/bookings')
             else fetchActiveRide()
+        } catch (err: any) {
+            setErrorMsg(err.message)
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
+    const handleCancel = async () => {
+        if (!booking) return
+        if (!window.confirm('Are you sure you want to cancel this ride? The customer will be notified.')) return
+        setActionLoading(true)
+        setErrorMsg('')
+        try {
+            const res = await fetch(`/api/bookings/${booking._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'cancelled' }),
+            })
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || 'Failed to cancel ride')
+            }
+            router.push('/partner/bookings')
         } catch (err: any) {
             setErrorMsg(err.message)
         } finally {
@@ -213,17 +238,29 @@ export default function ActiveRidePage() {
                                     />
                                 </div>
 
-                                {/* CTA */}
+                                {/* CTA Buttons */}
                                 {booking.status === 'confirmed' ? (
-                                    <button type='button' disabled={actionLoading} onClick={() => handleStatus('started')}
-                                        className='w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                        {actionLoading ? <span className='h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white' /> : <><Play size={14} /> Start Ride</>}
-                                    </button>
+                                    <div className='space-y-2.5'>
+                                        <button type='button' disabled={actionLoading} onClick={() => handleStatus('started')}
+                                            className='w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><Play size={14} /> Start Ride</>}
+                                        </button>
+                                        <button type='button' disabled={actionLoading} onClick={handleCancel}
+                                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-3 text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            <XCircle size={14} /> Cancel Ride
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <button type='button' disabled={actionLoading} onClick={() => handleStatus('completed')}
-                                        className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                        {actionLoading ? <span className='h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white' /> : <><CheckCircle size={14} /> Complete Ride</>}
-                                    </button>
+                                    <div className='space-y-2.5'>
+                                        <button type='button' disabled={actionLoading} onClick={() => handleStatus('completed')}
+                                            className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><CheckCircle size={14} /> Complete Ride</>}
+                                        </button>
+                                        <button type='button' disabled={actionLoading} onClick={handleCancel}
+                                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-3 text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            <XCircle size={14} /> Cancel Ride
+                                        </button>
+                                    </div>
                                 )}
                             </>
                         )}
