@@ -16,6 +16,7 @@ import {
     CreditCard,
     HelpCircle,
     Package,
+    Radio,
     RefreshCw,
     Scooter,
     Truck,
@@ -239,6 +240,124 @@ export default function UserBookingsPage() {
     )
 }
 
+function SearchingAnimation({ vehicleType, createdAt }: { vehicleType: string; createdAt: string }) {
+    const VehicleIcon = VEHICLE_ICONS[vehicleType] || Car
+    const [elapsed, setElapsed] = React.useState(0)
+
+    React.useEffect(() => {
+        const start = new Date(createdAt).getTime()
+        const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)))
+        tick()
+        const iv = setInterval(tick, 1000)
+        return () => clearInterval(iv)
+    }, [createdAt])
+
+    const mins = Math.floor(elapsed / 60)
+    const secs = elapsed % 60
+
+    return (
+        <div className='relative flex h-full w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-zinc-950 via-zinc-900/80 to-black'>
+            {/* Subtle road grid */}
+            <div className='absolute inset-0 opacity-[0.04]'
+                style={{
+                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)',
+                    backgroundSize: '32px 32px',
+                }}
+            />
+
+            {/* Radar pulse rings */}
+            <div className='absolute inset-0 flex items-center justify-center'>
+                {[0, 0.8, 1.6].map((delay, i) => (
+                    <div
+                        key={i}
+                        className='absolute rounded-full border border-amber-500/30'
+                        style={{
+                            width: '220px',
+                            height: '220px',
+                            animation: `radar-pulse 2.4s ease-out ${delay}s infinite`,
+                        }}
+                    />
+                ))}
+            </div>
+
+            {/* Inner glow circle */}
+            <div
+                className='absolute h-28 w-28 rounded-full bg-amber-500/5 border border-amber-500/10'
+                style={{ animation: 'glow-pulse 2s ease-in-out infinite' }}
+            />
+
+            {/* Orbiting driver dots */}
+            <div className='absolute flex items-center justify-center'>
+                <div
+                    className='absolute h-3 w-3 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]'
+                    style={{ animation: 'orbit 6s linear infinite' }}
+                />
+                <div
+                    className='absolute h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+                    style={{ animation: 'orbit-reverse 8s linear infinite' }}
+                />
+                <div
+                    className='absolute h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.5)]'
+                    style={{ animation: 'orbit 10s linear infinite', animationDelay: '-3s' }}
+                />
+            </div>
+
+            {/* Floating nearby dots */}
+            {[{ x: -70, y: -40, s: 6, d: 2 }, { x: 80, y: -25, s: 5, d: 3 }, { x: -55, y: 50, s: 4, d: 1.5 }, { x: 65, y: 45, s: 5, d: 2.5 }].map((dot, i) => (
+                <div
+                    key={i}
+                    className='absolute rounded-full bg-white/20'
+                    style={{
+                        width: dot.s,
+                        height: dot.s,
+                        left: `calc(50% + ${dot.x}px)`,
+                        top: `calc(50% + ${dot.y}px)`,
+                        animation: `float-dot ${dot.d}s ease-in-out infinite`,
+                    }}
+                />
+            ))}
+
+            {/* Center vehicle icon */}
+            <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+                className='relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.15)]'
+                style={{ animation: 'car-bounce 2s ease-in-out infinite' }}
+            >
+                <VehicleIcon size={26} />
+            </motion.div>
+
+            {/* Status text */}
+            <div className='relative z-10 mt-4 flex flex-col items-center gap-1.5'>
+                <div className='flex items-center gap-1.5 text-xs font-black text-white'>
+                    <Radio size={12} className='text-amber-400 animate-pulse' />
+                    Searching for Driver
+                    <span className='flex gap-0.5'>
+                        {[0, 1, 2].map(i => (
+                            <span
+                                key={i}
+                                className='inline-block h-1 w-1 rounded-full bg-amber-400'
+                                style={{ animation: `dot-blink 1.4s ease-in-out ${i * 0.2}s infinite` }}
+                            />
+                        ))}
+                    </span>
+                </div>
+                <p className='text-[10px] font-semibold text-zinc-500'>
+                    Looking for nearby {vehicleType} partners...
+                </p>
+                <div className='mt-1 flex items-center gap-1.5 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-1'>
+                    <Clock size={10} className='text-zinc-500' />
+                    <span className='text-[10px] font-mono font-bold text-zinc-400 tabular-nums'>
+                        {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+                    </span>
+                    <span className='text-[9px] text-zinc-600'>waiting</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking: BookingLog; onPaymentStarted?: () => void; onBookingUpdated?: () => void }) {
     const VehicleIcon = VEHICLE_ICONS[booking.vehicleType] || Car
     const Badge = STATUS_BADGES[booking.status] || STATUS_BADGES.requested
@@ -319,17 +438,24 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
 
     return (
         <article className='overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition hover:border-white/15'>
-            <div className='h-[210px] border-b border-white/[0.06] bg-zinc-950'>
-                <PartnerRouteMap
-                    key={`${booking._id}-${booking.status}-${booking.updatedAt}`}
-                    pickupLat={booking.pickup.coordinates[1]}
-                    pickupLng={booking.pickup.coordinates[0]}
-                    dropoffLat={booking.dropoff.coordinates[1]}
-                    dropoffLng={booking.dropoff.coordinates[0]}
-                    distanceKm={Number(booking.distanceKm.toFixed(1))}
-                    durationMin={Number(booking.durationMin.toFixed(0))}
-                />
-            </div>
+            {/* Show searching animation for pending rides, map for everything else */}
+            {booking.status === 'requested' ? (
+                <div className='h-[240px] border-b border-white/[0.06] bg-zinc-950'>
+                    <SearchingAnimation vehicleType={booking.vehicleType} createdAt={booking.createdAt} />
+                </div>
+            ) : (
+                <div className='h-[210px] border-b border-white/[0.06] bg-zinc-950'>
+                    <PartnerRouteMap
+                        key={`${booking._id}-${booking.status}-${booking.updatedAt}`}
+                        pickupLat={booking.pickup.coordinates[1]}
+                        pickupLng={booking.pickup.coordinates[0]}
+                        dropoffLat={booking.dropoff.coordinates[1]}
+                        dropoffLng={booking.dropoff.coordinates[0]}
+                        distanceKm={Number(booking.distanceKm.toFixed(1))}
+                        durationMin={Number(booking.durationMin.toFixed(0))}
+                    />
+                </div>
+            )}
 
             <div className='space-y-4 p-4'>
                 <div className='flex items-start justify-between gap-3'>
