@@ -9,6 +9,7 @@ import {
   Bike,
   Car,
   Clock,
+  Layers,
   MapPin,
   Navigation,
   Package,
@@ -38,12 +39,16 @@ const VEHICLE_META: Record<
   string,
   { label: string; icon: React.ElementType }
 > = {
+  all: { label: 'All Vehicles', icon: Layers },
   bike: { label: 'Ride Bike', icon: Bike },
   car: { label: 'Ride Car', icon: Car },
   auto: { label: 'Ride Auto', icon: Scooter },
   loading: { label: 'Ride Loader', icon: Package },
   truck: { label: 'NexRide Cargo', icon: Truck },
 }
+
+const VEHICLE_FILTERS = ['all', 'bike', 'car', 'auto', 'loading', 'truck'] as const
+type VehicleFilter = (typeof VEHICLE_FILTERS)[number]
 
 function parseCoord(value: string | null): number | null {
   if (!value) return null
@@ -70,6 +75,7 @@ function SearchPageContent() {
   const [nearbyPartners, setNearbyPartners] = useState<NearbyPartner[]>([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<VehicleFilter>(vehicle as VehicleFilter || 'all')
 
   const loadRoute = useCallback(
     async (pick: RidePoint, drop: RidePoint) => {
@@ -86,13 +92,14 @@ function SearchPageContent() {
   )
 
   const fetchNearby = useCallback(
-    async (pick: RidePoint, tripKm?: number) => {
+    async (pick: RidePoint, tripKm?: number, typeOverride?: VehicleFilter) => {
       setNearbyLoading(true)
+      const typeParam = typeOverride ?? filterType
       try {
         const params = new URLSearchParams({
           lat: String(pick.lat),
           lng: String(pick.lng),
-          type: vehicle,
+          type: typeParam,
           radiusKm: '5',
         })
         if (tripKm != null && tripKm > 0) {
@@ -115,7 +122,7 @@ function SearchPageContent() {
         setNearbyLoading(false)
       }
     },
-    [vehicle]
+    [filterType]
   )
 
   useEffect(() => {
@@ -167,7 +174,7 @@ function SearchPageContent() {
         setPickup(pick)
         setDropoff(drop)
         const routeResult = await loadRoute(pick, drop)
-        await fetchNearby(pick, routeResult?.distanceKm)
+        await fetchNearby(pick, routeResult?.distanceKm, vehicle as VehicleFilter)
       } catch (e) {
         if (!cancelled) {
           setInitError(
@@ -243,6 +250,13 @@ function SearchPageContent() {
     [pickup, loadRoute, syncUrl, fetchNearby]
   )
 
+  // Re-fetch nearby partners when the vehicle type filter changes
+  useEffect(() => {
+    if (pickup && route) {
+      fetchNearby(pickup, route.distanceKm, filterType)
+    }
+  }, [filterType])
+
   useEffect(() => {
     if (!pickup) return
     const interval = setInterval(() => {
@@ -261,7 +275,7 @@ function SearchPageContent() {
         dropoff: dropoff.label,
         dropoffLat: String(dropoff.lat),
         dropoffLng: String(dropoff.lng),
-        vehicle: vehicle,
+        vehicle: partner.vehicle.type,
         phone: phone,
         partnerId: partner.partnerId,
         partnerName: partner.partnerName,
@@ -273,7 +287,7 @@ function SearchPageContent() {
       })
       router.push(`/user/checkout?${params.toString()}`)
     },
-    [pickup, dropoff, vehicle, phone, route, router]
+    [pickup, dropoff, phone, route, router]
   )
 
   const VehicleIcon = VEHICLE_META[vehicle]?.icon ?? Car
@@ -335,6 +349,32 @@ function SearchPageContent() {
           </div>
         </div>
       </header>
+
+      {/* Vehicle type filter bar */}
+      <div className='shrink-0 border-b border-white/[0.06] px-5 py-2.5 sm:px-7'>
+        <div className='no-scrollbar flex gap-2 overflow-x-auto'>
+          {VEHICLE_FILTERS.map((type) => {
+            const meta = VEHICLE_META[type]
+            const Icon = meta?.icon ?? Car
+            const isActive = filterType === type
+            return (
+              <button
+                key={type}
+                type='button'
+                onClick={() => setFilterType(type)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-wider transition-all duration-200 ${
+                  isActive
+                    ? 'border-white/25 bg-white/12 text-white shadow-[0_0_16px_-2px_rgba(255,255,255,0.12)]'
+                    : 'border-white/[0.08] bg-white/[0.03] text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-300'
+                }`}
+              >
+                <Icon size={13} className={isActive ? 'text-emerald-400' : ''} />
+                {meta?.label ?? type}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       <div className='flex flex-col-reverse lg:flex-row flex-1 min-h-0 overflow-hidden relative'>
         {/* Left/Bottom Details Sidebar */}

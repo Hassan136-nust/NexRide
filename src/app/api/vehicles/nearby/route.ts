@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl
     const lat = parseFloat(searchParams.get('lat') ?? '')
     const lng = parseFloat(searchParams.get('lng') ?? '')
-    const type = searchParams.get('type') as VehicleType | null
+    const type = searchParams.get('type') as VehicleType | 'all' | null
     const tripKm = parseFloat(searchParams.get('tripKm') ?? '0')
     const radiusKm = parseFloat(
       searchParams.get('radiusKm') ?? String(DEFAULT_RADIUS_KM)
@@ -47,9 +47,9 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    if (!type || !VEHICLE_TYPES.includes(type)) {
+    if (!type || (type !== 'all' && !VEHICLE_TYPES.includes(type))) {
       return NextResponse.json(
-        { error: 'Valid vehicle type is required' },
+        { error: 'Valid vehicle type is required (or use "all")' },
         { status: 400 }
       )
     }
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       { $unwind: '$vehicles' },
       {
         $match: {
-          'vehicles.type': type,
+          ...(type !== 'all' ? { 'vehicles.type': type } : {}),
           'vehicles.status': 'approved',
           'vehicles.isActive': true,
         },
