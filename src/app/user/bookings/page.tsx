@@ -15,6 +15,7 @@ import {
     Compass,
     CreditCard,
     HelpCircle,
+    MessageCircle,
     Package,
     Radio,
     RefreshCw,
@@ -23,6 +24,7 @@ import {
     XCircle,
     Loader2,
 } from 'lucide-react'
+import ChatSidebar from '@/components/chat/ChatSidebar'
 
 const PartnerRouteMap = dynamic(
     () => import('@/components/PartnerRouteMap'),
@@ -96,7 +98,7 @@ type BookingStatus =
 
 interface BookingLog {
     _id: string
-    partner?: { name?: string; email?: string; phone?: string } | null
+    partner?: { _id?: string; name?: string; email?: string; phone?: string } | null
     pickup: { label: string; coordinates: [number, number] }
     dropoff: { label: string; coordinates: [number, number] }
     vehicleType: string
@@ -377,12 +379,18 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
     const [payError, setPayError] = React.useState('')
     const [cancelling, setCancelling] = React.useState(false)
     const [cancelError, setCancelError] = React.useState('')
+    const [chatOpen, setChatOpen] = React.useState(false)
 
     // Ride can be cancelled by customer only if it's in these statuses
     const canCancel =
         booking.status === 'requested' ||
         booking.status === 'confirmed' ||
         booking.status === 'awaiting_payment'
+
+    // Chat is available for active rides (confirmed/started)
+    const canChat =
+        booking.status === 'confirmed' ||
+        booking.status === 'started'
 
     // Only consider truly paid if paymentStatus is 'paid' AND there's a valid Stripe session
     const isPaid =
@@ -440,7 +448,7 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
     }
 
     return (
-        <article className='overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition hover:border-white/15'>
+        <article className='relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] transition hover:border-white/15'>
             {/* Show searching animation for pending rides, map for everything else */}
             {booking.status === 'requested' ? (
                 <div className='h-[240px] border-b border-white/[0.06] bg-zinc-950'>
@@ -550,7 +558,42 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
                         ) : null}
                     </div>
                 )}
+
+                {/* Chat with Driver button for active rides */}
+                {canChat && (
+                    <div className='border-t border-white/[0.05] pt-3'>
+                        <button
+                            type='button'
+                            onClick={() => setChatOpen(true)}
+                            className='w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-lg active:scale-[0.99] transition-all flex items-center justify-center gap-2'
+                        >
+                            <MessageCircle size={13} />
+                            Chat with Driver
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* Chat Sidebar Overlay */}
+            {chatOpen && canChat && (
+                <div className='fixed inset-0 z-50 bg-black'>
+                    {/* Close button */}
+                    <button
+                        type='button'
+                        onClick={() => setChatOpen(false)}
+                        className='absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition'
+                    >
+                        <XCircle size={18} />
+                    </button>
+                    <ChatSidebar
+                        bookingId={booking._id}
+                        partnerName={booking.partner?.name || 'Driver'}
+                        partnerEmail={booking.partner?.email}
+                        userRole='user'
+                        alwaysOpen={true}
+                    />
+                </div>
+            )}
         </article>
     )
 }

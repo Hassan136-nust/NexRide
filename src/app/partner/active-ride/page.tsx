@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import ChatSidebar from '@/components/chat/ChatSidebar'
 import {
     Clock,
     Compass,
@@ -26,6 +27,7 @@ import {
     CreditCard,
     XCircle,
     Loader2,
+    MessageCircle,
 } from 'lucide-react'
 
 const PartnerRouteMap = dynamic(
@@ -48,7 +50,7 @@ const VEHICLE_LABELS: Record<string, React.ElementType> = {
 
 interface ActiveBooking {
     _id: string
-    user: { name: string; email: string; phone?: string }
+    user: { _id: string; name: string; email: string; phone?: string }
     pickup: { label: string; coordinates: [number, number] }
     dropoff: { label: string; coordinates: [number, number] }
     vehicleType: string
@@ -85,6 +87,7 @@ export default function ActiveRidePage() {
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState(false)
     const [errorMsg, setErrorMsg] = useState('')
+    const [mobileChatOpen, setMobileChatOpen] = useState(false)
 
     const fetchActiveRide = async () => {
         setLoading(true)
@@ -178,7 +181,7 @@ export default function ActiveRidePage() {
 
             <div className='flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden'>
                 {/* ── Left: Booking Details Panel ── */}
-                <div className='w-full lg:w-[380px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[50dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
+                <div className='w-full lg:w-[340px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[50dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
                     <div className='flex-1 overflow-y-auto no-scrollbar p-5 space-y-5'>
                         {errorMsg && (
                             <div className='rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400 flex items-center gap-2'>
@@ -281,7 +284,51 @@ export default function ActiveRidePage() {
                         </div>
                     )}
                 </div>
+
+                {/* ── Chat Sidebar (always visible on desktop) ── */}
+                {booking && (
+                    <div className='hidden lg:flex lg:w-[320px] shrink-0 border-l border-white/[0.06]'>
+                        <ChatSidebar
+                            bookingId={booking._id}
+                            partnerName={booking.user?.name || 'Passenger'}
+                            partnerEmail={booking.user?.email}
+                            userRole='partner'
+                            alwaysOpen={true}
+                        />
+                    </div>
+                )}
             </div>
+
+            {/* Mobile Chat Floating Button */}
+            {booking && !mobileChatOpen && (
+                <button
+                    type='button'
+                    onClick={() => setMobileChatOpen(true)}
+                    className='lg:hidden fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl shadow-sky-600/30 hover:bg-sky-500 transition-all'
+                >
+                    <MessageCircle size={22} />
+                </button>
+            )}
+
+            {/* Mobile Chat Overlay */}
+            {booking && mobileChatOpen && (
+                <div className='lg:hidden fixed inset-0 z-50 bg-black'>
+                    <button
+                        type='button'
+                        onClick={() => setMobileChatOpen(false)}
+                        className='absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition'
+                    >
+                        <XCircle size={18} />
+                    </button>
+                    <ChatSidebar
+                        bookingId={booking._id}
+                        partnerName={booking.user?.name || 'Passenger'}
+                        partnerEmail={booking.user?.email}
+                        userRole='partner'
+                        alwaysOpen={true}
+                    />
+                </div>
+            )}
         </PageShell>
     )
 }
@@ -295,7 +342,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className='relative z-10 mx-3 flex h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:mx-5'
+                className='relative z-10 mx-3 flex h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-7xl flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:mx-5'
             >
                 {children}
             </motion.div>
