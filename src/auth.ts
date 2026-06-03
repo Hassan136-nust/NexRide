@@ -9,7 +9,6 @@ import bcrypt from "bcryptjs"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-
     CredentialsProvider({
       name: "Credentials",
 
@@ -19,7 +18,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           type: "email",
           placeholder: "abc@gmail.com",
         },
-
         password: {
           label: "Password",
           type: "password",
@@ -27,8 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
 
       async authorize(credentials) {
-
-        if (!credentials.email || !credentials.password) {
+        if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required")
         }
 
@@ -47,7 +44,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password as string,
+          credentials.password,
           user.password
         )
 
@@ -68,31 +65,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-
   ],
 
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        await connectDb()
 
-async signIn({user,account}){
-    if(account?.provider=="google"){
-        await connectDb()   
-        const existingUser = await User.findOne({email:user.email})
-
-        if(!existingUser){
-            const newUser = await User.create({
-                name:user.name,
-                email:user.email,
-                role:"user",
-            })
+        if (!user.email) {
+          return false
         }
-        user.id=existingUser._id
-        user.role=existingUser.role
-}
-    return true;
-},
+
+        let existingUser = await User.findOne({
+          email: user.email,
+        })
+
+        if (!existingUser) {
+          existingUser = await User.create({
+            name: user.name || "User",
+            email: user.email,
+            role: "user",
+          })
+        }
+
+        user.id = existingUser._id.toString()
+        user.role = existingUser.role
+      }
+
+      return true
+    },
 
     async jwt({ token, user }) {
-
       if (user) {
         token.id = user.id
         token.name = user.name
@@ -104,10 +107,9 @@ async signIn({user,account}){
     },
 
     async session({ session, token }) {
-
       if (session.user) {
         session.user.id = token.id as string
-        session.user.name = token.name
+        session.user.name = token.name as string
         session.user.email = token.email as string
         session.user.role = token.role as string
       }
