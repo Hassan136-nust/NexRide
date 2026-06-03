@@ -54,8 +54,8 @@ export async function POST(request: Request) {
 
   
     user.isEmailVerified = true
-    user.otp = null
-    user.otpExpires = null
+    user.otp = undefined
+    user.otpExpires = undefined
 
     await user.save()
 
