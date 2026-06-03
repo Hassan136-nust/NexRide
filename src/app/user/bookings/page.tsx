@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -574,10 +575,9 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
                 )}
             </div>
 
-            {/* Chat Sidebar Overlay */}
-            {chatOpen && canChat && (
-                <div className='fixed inset-0 z-50 bg-black'>
-                    {/* Close button */}
+            {/* Chat Sidebar Overlay — portal to escape Leaflet z-index */}
+            {chatOpen && canChat && typeof document !== 'undefined' && createPortal(
+                <div className='fixed inset-0 z-[9999] bg-black'>
                     <button
                         type='button'
                         onClick={() => setChatOpen(false)}
@@ -592,7 +592,8 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
                         userRole='user'
                         alwaysOpen={true}
                     />
-                </div>
+                </div>,
+                document.body
             )}
         </article>
     )

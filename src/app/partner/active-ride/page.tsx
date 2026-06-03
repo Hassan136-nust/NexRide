@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
@@ -287,7 +288,7 @@ export default function ActiveRidePage() {
 
                 {/* ── Chat Sidebar (always visible on desktop) ── */}
                 {booking && (
-                    <div className='hidden lg:flex lg:w-[320px] shrink-0 border-l border-white/[0.06]'>
+                    <div className='hidden lg:flex lg:w-[320px] h-full shrink-0 border-l border-white/[0.06]'>
                         <ChatSidebar
                             bookingId={booking._id}
                             partnerName={booking.user?.name || 'Passenger'}
@@ -310,9 +311,9 @@ export default function ActiveRidePage() {
                 </button>
             )}
 
-            {/* Mobile Chat Overlay */}
-            {booking && mobileChatOpen && (
-                <div className='lg:hidden fixed inset-0 z-50 bg-black'>
+            {/* Mobile Chat Overlay — portal to escape Leaflet z-index */}
+            {booking && mobileChatOpen && typeof document !== 'undefined' && createPortal(
+                <div className='fixed inset-0 z-[9999] bg-black'>
                     <button
                         type='button'
                         onClick={() => setMobileChatOpen(false)}
@@ -327,7 +328,8 @@ export default function ActiveRidePage() {
                         userRole='partner'
                         alwaysOpen={true}
                     />
-                </div>
+                </div>,
+                document.body
             )}
         </PageShell>
     )

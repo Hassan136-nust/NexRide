@@ -199,8 +199,8 @@ export default function ChatSidebar({
 
     return (
         <div
-            className={`flex flex-col h-full border-l border-white/[0.06] bg-[#0A0A0A] ${
-                alwaysOpen ? 'w-full lg:w-[340px]' : 'fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-auto lg:w-[340px]'
+            className={`flex flex-col h-full w-full bg-[#0A0A0A] ${
+                alwaysOpen ? '' : 'fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-auto'
             }`}
         >
             {/* ── Header ── */}
