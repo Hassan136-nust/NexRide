@@ -42,6 +42,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("User does not exist")
         }
 
+        if (!user.password) {
+          throw new Error("Password not set for this user")
+        }
+
         const isPasswordValid = await bcrypt.compare(
           credentials.password as string,
           user.password
