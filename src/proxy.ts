@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function proxy(req: NextRequest) {
+  const PUBLIC_ROUTES = ["/"]
+  const PUBLIC_APIS = ["/api/auth"]
 
-  // 🚀 1. Skip Next.js internals + static files FIRST (MOST IMPORTANT FIX)
+  const pathname = req.nextUrl.pathname
+
+  // skip next internals + static files (FIX FOR YOUR IMAGE ISSUE)
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
@@ -14,10 +17,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 🚀 2. Public routes
-  const PUBLIC_ROUTES = ["/"]
-  const PUBLIC_APIS = ["/api/auth"]
-
+  // public routes
   if (
     PUBLIC_ROUTES.includes(pathname) ||
     PUBLIC_APIS.some((api) => pathname.startsWith(api))
@@ -25,7 +25,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 🚀 3. Auth check
   const session = await auth()
 
   if (!session?.user) {
@@ -34,12 +33,12 @@ export async function middleware(req: NextRequest) {
 
   const role = session.user.role
 
-  // 🚀 4. ADMIN ONLY
+  // ADMIN ONLY
   if (pathname.startsWith("/admin") && role !== "admin") {
     return NextResponse.redirect(new URL("/", req.url))
   }
 
-  // 🚀 5. PARTNER ONLY (allow onboarding)
+  // PARTNER ONLY (allow onboarding)
   if (
     pathname.startsWith("/partner") &&
     !pathname.startsWith("/partner/onboarding") &&
@@ -48,7 +47,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url))
   }
 
-  // 🚀 6. API protection
+  // API protection
   if (pathname.startsWith("/api") && !session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -56,9 +55,6 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 
-// ✅ IMPORTANT: matcher must NOT include static files
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next|favicon.ico).*)"],
 }
