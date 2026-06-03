@@ -63,17 +63,17 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
       <motion.div
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className='fixed top-4 left-1/2 -translate-x-1/2 w-[94%] md:w-[86%]
+        className='fixed top-2 sm:top-4 left-1/2 -translate-x-1/2 w-[96%] sm:w-[94%] md:w-[86%]
         z-50 rounded-full bg-[#0B0B0B] text-white
-        shadow-[0_15px_50px_rgba(0,0,0,0.7)] py-3'
+        shadow-[0_15px_50px_rgba(0,0,0,0.7)] py-2.5 sm:py-3'
       >
-        <div className='max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between'>
+        <div className='max-w-7xl mx-auto px-3 sm:px-4 md:px-8 flex items-center justify-between'>
 
           {/* Logo */}
-          <Image src={logo} alt="NexRide logo" width={84} height={84} priority />
+          <Image src={logo} alt="NexRide logo" width={70} height={70} priority className='w-[60px] sm:w-[70px] md:w-[84px] h-auto' />
 
           {/* Nav links — desktop */}
-          <div className='hidden md:flex items-center gap-10'>
+          <div className='hidden md:flex items-center gap-6 lg:gap-10'>
             {Nav_Items.map((item, index) => {
               const href = getHref(item)
               const active = href === pathName

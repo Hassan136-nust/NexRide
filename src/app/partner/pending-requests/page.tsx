@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import {
+    ArrowLeft,
     Clock,
     Compass,
     Check,
@@ -145,21 +146,31 @@ export default function PendingRequestsPage() {
 
     return (
         <PageShell>
-            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-7'>
-                <div>
-                    <h1 className='text-base font-black tracking-tight'>Pending Ride Requests</h1>
-                    <p className='mt-0.5 text-[11px] text-zinc-500'>Incoming passenger requests · auto-refreshes every 15 s</p>
+            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3 sm:px-7 sm:py-4'>
+                <div className='flex items-center gap-3 min-w-0'>
+                    <button
+                        type='button'
+                        onClick={() => router.push('/')}
+                        className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 active:scale-95'
+                        aria-label='Back to home'
+                    >
+                        <ArrowLeft size={16} />
+                    </button>
+                    <div className='min-w-0'>
+                        <h1 className='text-sm font-black tracking-tight sm:text-base truncate'>Pending Ride Requests</h1>
+                        <p className='mt-0.5 text-[10px] sm:text-[11px] text-zinc-500 hidden sm:block'>Incoming passenger requests · auto-refreshes every 15 s</p>
+                    </div>
                 </div>
                 <button type='button' onClick={fetchRequests} disabled={loading}
-                    className='flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 disabled:opacity-50'>
+                    className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 disabled:opacity-50'>
                     <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                 </button>
             </header>
 
             <div className='flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden'>
                 {/* ── Left: Request cards ── */}
-                <div className='w-full lg:w-[400px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[48dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
-                    <div className='flex-1 overflow-y-auto no-scrollbar p-4 space-y-3.5'>
+                <div className='w-full lg:w-[380px] xl:w-[420px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[45dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
+                    <div className='flex-1 overflow-y-auto no-scrollbar p-3 sm:p-4 space-y-2.5 sm:space-y-3.5'>
                         {errorMsg && (
                             <div className='rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-center text-xs font-semibold text-red-400 flex items-center justify-center gap-2'>
                                 <AlertCircle size={13} /> {errorMsg}
@@ -172,10 +183,10 @@ export default function PendingRequestsPage() {
                                 <p className='text-xs text-zinc-500'>Scanning for passengers…</p>
                             </div>
                         ) : requests.length === 0 ? (
-                            <div className='flex flex-col items-center justify-center py-20 text-center border border-dashed border-white/10 rounded-2xl px-5 bg-white/[0.01]'>
-                                <RefreshCw size={22} className='text-zinc-600 animate-pulse mb-3' />
-                                <p className='text-sm font-bold text-zinc-300'>No requests yet</p>
-                                <p className='text-[10px] text-zinc-500 mt-1'>Auto-refreshing every 15 s</p>
+                            <div className='flex flex-col items-center justify-center py-12 sm:py-20 text-center border border-dashed border-white/10 rounded-xl sm:rounded-2xl px-4 sm:px-5 bg-white/[0.01]'>
+                                <RefreshCw size={20} className='sm:w-[22px] sm:h-[22px] text-zinc-600 animate-pulse mb-3' />
+                                <p className='text-xs sm:text-sm font-bold text-zinc-300'>No requests yet</p>
+                                <p className='text-[9px] sm:text-[10px] text-zinc-500 mt-1'>Auto-refreshing every 15 s</p>
                             </div>
                         ) : (
                             requests.map((req) => {
@@ -185,7 +196,7 @@ export default function PendingRequestsPage() {
                                     <motion.div
                                         key={req._id}
                                         onClick={() => setSelectedId(req._id)}
-                                        className={`rounded-2xl border p-4 transition-all duration-200 cursor-pointer space-y-3 ${isSelected
+                                        className={`rounded-xl sm:rounded-2xl border p-3 sm:p-4 transition-all duration-200 cursor-pointer space-y-2.5 sm:space-y-3 ${isSelected
                                                 ? 'border-emerald-500/40 bg-zinc-900/60 shadow-lg'
                                                 : 'border-white/[0.06] bg-white/[0.02] hover:border-white/15'
                                             }`}
@@ -234,15 +245,15 @@ export default function PendingRequestsPage() {
                                         <div className='flex gap-2 pt-1'>
                                             <button type='button' disabled={actionLoading !== null}
                                                 onClick={(e) => { e.stopPropagation(); handleAction(req._id, 'confirmed') }}
-                                                className='flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2.5 text-[11px] font-black uppercase tracking-wide text-white transition disabled:opacity-50 flex items-center justify-center gap-1.5'>
+                                                className='flex-1 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-500 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wide text-white transition disabled:opacity-50 flex items-center justify-center gap-1.5'>
                                                 {actionLoading === req._id
                                                     ? <span className='h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white' />
-                                                    : <><Check size={11} /> Accept</>}
+                                                    : <><Check size={10} className='sm:w-[11px] sm:h-[11px]' /> <span className='hidden sm:inline'>Accept</span><span className='sm:hidden'>OK</span></>}
                                             </button>
                                             <button type='button' disabled={actionLoading !== null}
                                                 onClick={(e) => { e.stopPropagation(); handleAction(req._id, 'rejected') }}
-                                                className='rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 py-2.5 px-3.5 text-zinc-300 transition disabled:opacity-50 flex items-center justify-center'>
-                                                <X size={13} />
+                                                className='rounded-lg sm:rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 py-2 sm:py-2.5 px-3 sm:px-3.5 text-zinc-300 transition disabled:opacity-50 flex items-center justify-center'>
+                                                <X size={12} className='sm:w-[13px] sm:h-[13px]' />
                                             </button>
                                         </div>
                                     </motion.div>
@@ -253,7 +264,7 @@ export default function PendingRequestsPage() {
                 </div>
 
                 {/* ── Right: Full Map + Route Details ── */}
-                <div className='flex-1 h-[52dvh] lg:h-full flex flex-col overflow-hidden bg-zinc-950/20'>
+                <div className='flex-1 h-[55dvh] lg:h-full flex flex-col overflow-hidden bg-zinc-950/20'>
                     {selected ? (
                         <>
                             {/* Map fills upper portion */}
@@ -267,8 +278,8 @@ export default function PendingRequestsPage() {
                             </div>
 
                             {/* Info strip below map */}
-                            <div className='shrink-0 bg-[#0B0B0B]/90 border-t border-white/[0.06] backdrop-blur-md p-5 space-y-3'>
-                                <div className='grid grid-cols-2 gap-5'>
+                            <div className='shrink-0 bg-[#0B0B0B]/90 border-t border-white/[0.06] backdrop-blur-md p-3 sm:p-4 lg:p-5 space-y-2.5 sm:space-y-3'>
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5'>
                                     {/* Route */}
                                     <div className='space-y-2'>
                                         <p className='text-[9px] font-black text-zinc-500 uppercase tracking-wider'>Route</p>
@@ -286,7 +297,7 @@ export default function PendingRequestsPage() {
                                     </div>
 
                                     {/* Passenger & vehicle */}
-                                    <div className='space-y-1.5 border-l border-white/[0.05] pl-5'>
+                                    <div className='space-y-1.5 sm:border-l border-white/[0.05] sm:pl-5 border-t sm:border-t-0 pt-3 sm:pt-0'>
                                         <p className='text-[9px] font-black text-zinc-500 uppercase tracking-wider'>Details</p>
                                         <InfoRow icon={<User size={11} />} label='Passenger' value={getPassengerName(selected)} />
                                         <InfoRow icon={<Phone size={11} />} label='Phone' value={getPassengerPhone(selected)} />
@@ -317,7 +328,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className='relative z-10 mx-3 flex h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:mx-5'
+                className='relative z-10 mx-2 sm:mx-3 lg:mx-5 flex h-[calc(100dvh-1rem)] sm:h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-5xl flex-col overflow-hidden rounded-[20px] sm:rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl'
             >
                 {children}
             </motion.div>

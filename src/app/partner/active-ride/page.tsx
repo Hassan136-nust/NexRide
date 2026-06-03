@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import ChatSidebar from '@/components/chat/ChatSidebar'
 import {
+    ArrowLeft,
     Clock,
     Compass,
     Play,
@@ -169,21 +170,31 @@ export default function ActiveRidePage() {
 
     return (
         <PageShell>
-            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-7'>
-                <div>
-                    <h1 className='text-base font-black tracking-tight'>Active Ride</h1>
-                    <p className='mt-0.5 text-[11px] text-zinc-500'>Manage your current trip in real-time</p>
+            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3 sm:px-7 sm:py-4'>
+                <div className='flex items-center gap-3 min-w-0'>
+                    <button
+                        type='button'
+                        onClick={() => router.push('/')}
+                        className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 active:scale-95'
+                        aria-label='Back to home'
+                    >
+                        <ArrowLeft size={16} />
+                    </button>
+                    <div className='min-w-0'>
+                        <h1 className='text-sm font-black tracking-tight sm:text-base truncate'>Active Ride</h1>
+                        <p className='mt-0.5 text-[10px] sm:text-[11px] text-zinc-500 hidden sm:block'>Manage your current trip in real-time</p>
+                    </div>
                 </div>
                 <button type='button' onClick={fetchActiveRide} disabled={loading}
-                    className='flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 disabled:opacity-50'>
+                    className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 disabled:opacity-50'>
                     <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                 </button>
             </header>
 
             <div className='flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden'>
                 {/* ── Left: Booking Details Panel ── */}
-                <div className='w-full lg:w-[340px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[50dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
-                    <div className='flex-1 overflow-y-auto no-scrollbar p-5 space-y-5'>
+                <div className='w-full lg:w-[340px] xl:w-[360px] shrink-0 border-t lg:border-t-0 lg:border-r border-white/[0.06] flex flex-col h-[48dvh] lg:h-full overflow-hidden bg-black/40 backdrop-blur-md'>
+                    <div className='flex-1 overflow-y-auto no-scrollbar p-3 sm:p-4 lg:p-5 space-y-3 sm:space-y-4 lg:space-y-5'>
                         {errorMsg && (
                             <div className='rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400 flex items-center gap-2'>
                                 <AlertCircle size={13} /> {errorMsg}
@@ -215,7 +226,7 @@ export default function ActiveRidePage() {
                                 </div>
 
                                 {/* Passenger section */}
-                                <div className='rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3'>
+                                <div className='rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3 sm:p-4 space-y-2.5 sm:space-y-3'>
                                     <p className='text-[9px] font-black text-zinc-500 uppercase tracking-wider'>Passenger</p>
                                     <div className='flex items-center gap-3'>
                                         <div className='h-10 w-10 rounded-xl bg-zinc-800 border border-white/10 flex items-center justify-center text-sm font-bold uppercase'>
@@ -231,7 +242,7 @@ export default function ActiveRidePage() {
                                 </div>
 
                                 {/* Vehicle + Fare section */}
-                                <div className='rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-0.5'>
+                                <div className='rounded-xl sm:rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3 sm:p-4 space-y-0.5'>
                                     <p className='text-[9px] font-black text-zinc-500 uppercase tracking-wider mb-2.5'>Ride Details</p>
                                     <InfoRow icon={<Car size={11} />} label='Vehicle model' value={booking.vehicleModel} />
                                     <InfoRow icon={<Hash size={11} />} label='Plate number' value={booking.vehicleNumber} />
@@ -248,20 +259,20 @@ export default function ActiveRidePage() {
 
                                 {/* CTA Buttons */}
                                 {booking.status === 'confirmed' ? (
-                                    <div className='space-y-2.5'>
+                                    <div className='space-y-2 sm:space-y-2.5'>
                                         <button type='button' disabled={actionLoading} onClick={() => handleStatus('started')}
-                                            className='w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                            {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><Play size={14} /> Start Ride</>}
+                                            className='w-full rounded-xl bg-sky-600 hover:bg-sky-500 py-3 sm:py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            {actionLoading ? <Loader2 size={13} className='sm:w-[14px] sm:h-[14px] animate-spin' /> : <><Play size={13} className='sm:w-[14px] sm:h-[14px]' /> Start Ride</>}
                                         </button>
                                         <button type='button' disabled={actionLoading} onClick={handleCancel}
-                                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-3 text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                            <XCircle size={14} /> Cancel Ride
+                                            className='w-full rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 sm:py-3 text-[11px] sm:text-xs font-black uppercase tracking-wider text-red-400 hover:bg-red-500/20 transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                            <XCircle size={13} className='sm:w-[14px] sm:h-[14px]' /> Cancel Ride
                                         </button>
                                     </div>
                                 ) : (
                                     <button type='button' disabled={actionLoading} onClick={() => handleStatus('completed')}
-                                        className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3.5 text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
-                                        {actionLoading ? <Loader2 size={14} className='animate-spin' /> : <><CheckCircle size={14} /> Complete Ride</>}
+                                        className='w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 py-3 sm:py-3.5 text-[11px] sm:text-xs font-black uppercase tracking-wider text-white transition flex items-center justify-center gap-2 disabled:opacity-50'>
+                                        {actionLoading ? <Loader2 size={13} className='sm:w-[14px] sm:h-[14px] animate-spin' /> : <><CheckCircle size={13} className='sm:w-[14px] sm:h-[14px]' /> Complete Ride</>}
                                     </button>
                                 )}
                             </>
@@ -270,7 +281,7 @@ export default function ActiveRidePage() {
                 </div>
 
                 {/* ── Right: Full route map ── */}
-                <div className='flex-1 h-[50dvh] lg:h-full overflow-hidden bg-zinc-950/20 relative'>
+                <div className='flex-1 h-[52dvh] lg:h-full overflow-hidden bg-zinc-950/20 relative'>
                     {booking ? (
                         <PartnerRouteMap
                             pickupLat={booking.pickup.coordinates[1]}
@@ -288,7 +299,7 @@ export default function ActiveRidePage() {
 
                 {/* ── Chat Sidebar (always visible on desktop) ── */}
                 {booking && (
-                    <div className='hidden lg:flex lg:w-[320px] h-full shrink-0 border-l border-white/[0.06]'>
+                    <div className='hidden lg:flex lg:w-[300px] xl:w-[320px] h-full shrink-0 border-l border-white/[0.06]'>
                         <ChatSidebar
                             bookingId={booking._id}
                             partnerName={booking.user?.name || 'Passenger'}
@@ -305,9 +316,9 @@ export default function ActiveRidePage() {
                 <button
                     type='button'
                     onClick={() => setMobileChatOpen(true)}
-                    className='lg:hidden fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl shadow-sky-600/30 hover:bg-sky-500 transition-all'
+                    className='lg:hidden fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-xl shadow-sky-600/30 hover:bg-sky-500 transition-all active:scale-95'
                 >
-                    <MessageCircle size={22} />
+                    <MessageCircle size={20} className='sm:w-[22px] sm:h-[22px]' />
                 </button>
             )}
 
@@ -344,7 +355,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className='relative z-10 mx-3 flex h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-7xl flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:mx-5'
+                className='relative z-10 mx-2 sm:mx-3 lg:mx-5 flex h-[calc(100dvh-1rem)] sm:h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-7xl flex-col overflow-hidden rounded-[20px] sm:rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl'
             >
                 {children}
             </motion.div>

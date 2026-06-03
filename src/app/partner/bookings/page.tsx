@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import {
+    ArrowLeft,
     Clock,
     Compass,
     RefreshCw,
@@ -130,27 +131,37 @@ export default function PartnerBookingsPage() {
     return (
         <PageShell>
             {/* Header */}
-            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-5 py-4 sm:px-7 sm:py-5'>
-                <div>
-                    <h1 className='text-base font-black tracking-tight sm:text-lg'>
-                        My Trips History
-                    </h1>
-                    <p className='mt-0.5 text-[11px] text-zinc-500'>
-                        Overview of all your rides, statuses, passenger listings, and fares earned
-                    </p>
+            <header className='flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3 sm:px-7 sm:py-4 lg:py-5'>
+                <div className='flex items-center gap-3 min-w-0'>
+                    <button
+                        type='button'
+                        onClick={() => router.push('/')}
+                        className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 active:scale-95'
+                        aria-label='Back to home'
+                    >
+                        <ArrowLeft size={16} />
+                    </button>
+                    <div className='min-w-0'>
+                        <h1 className='text-sm font-black tracking-tight sm:text-base lg:text-lg truncate'>
+                            My Trips History
+                        </h1>
+                        <p className='mt-0.5 text-[10px] sm:text-[11px] text-zinc-500 hidden sm:block'>
+                            Overview of all your rides, statuses, passenger listings, and fares earned
+                        </p>
+                    </div>
                 </div>
                 <button
                     type='button'
                     onClick={fetchBookings}
                     disabled={loading}
-                    className='flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50'
+                    className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50'
                 >
                     <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                 </button>
             </header>
 
             {/* Main Content Area */}
-            <div className='flex-1 overflow-y-auto no-scrollbar p-5 sm:p-6 space-y-4 max-w-4xl w-full mx-auto'>
+            <div className='flex-1 overflow-y-auto no-scrollbar p-4 sm:p-5 lg:p-6 space-y-3 sm:space-y-4 max-w-4xl w-full mx-auto'>
                 {errorMsg && (
                     <div className='rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-center text-xs font-semibold text-red-500 flex items-center justify-center gap-2'>
                         <AlertCircle size={14} />
@@ -295,7 +306,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
             <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className='relative z-10 mx-3 flex h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl sm:mx-5'
+                className='relative z-10 mx-2 sm:mx-3 lg:mx-5 flex h-[calc(100dvh-1rem)] sm:h-[calc(100dvh-2rem)] max-h-[920px] w-full max-w-5xl flex-col overflow-hidden rounded-[20px] sm:rounded-[28px] border border-white/[0.08] bg-black/50 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.85)] backdrop-blur-2xl'
             >
                 {children}
             </motion.div>
