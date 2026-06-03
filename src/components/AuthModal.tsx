@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { useSession } from "next-auth/react"
+import google from "../../public/google.jpg"
 
 type propType = {
   open: boolean
@@ -191,7 +192,7 @@ function AuthModal({
               onClick={handleGoogleLogin}
               className='w-full h-11 rounded-xl border border-black/20 flex items-center justify-center gap-3 text-sm font-semibold hover:bg-black hover:text-white'
             >
-              <Image src="/google.jpg" alt="google" width={20} height={20} />
+              <Image src={google} alt="google" width={20} height={20} />
               Continue with Google
             </button>
 
