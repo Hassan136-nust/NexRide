@@ -86,8 +86,11 @@ export default function ChatSidebar({
     useEffect(() => {
         fetchMessages()
         fetchSuggestions()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bookingId])
 
-        // Listen for incoming socket messages
+    // Socket listener (separate effect so isOpen changes don't re-trigger fetches)
+    useEffect(() => {
         const socket = getSocket()
         if (!socket) return
 
@@ -97,7 +100,6 @@ export default function ChatSidebar({
                 if (prev.some((m) => m._id === msg._id)) return prev
                 return [...prev, msg]
             })
-            // Track unread if chat is closed
             if (!isOpen && msg.senderRole !== userRole) {
                 setUnread((prev) => prev + 1)
             }
@@ -107,16 +109,16 @@ export default function ChatSidebar({
         return () => {
             socket.off('newMessage', handleNewMessage)
         }
-    }, [bookingId, fetchMessages, fetchSuggestions, isOpen, userRole])
+    }, [bookingId, isOpen, userRole])
 
     // ── Auto-scroll on new messages ─────────────────────────
     useEffect(() => {
         scrollToBottom()
     }, [messages, scrollToBottom])
 
-    // ── Poll for messages every 5 seconds ───────────────────
+    // ── Poll for messages every 15 seconds (socket handles real-time) ──
     useEffect(() => {
-        const iv = setInterval(fetchMessages, 5000)
+        const iv = setInterval(fetchMessages, 15000)
         return () => clearInterval(iv)
     }, [fetchMessages])
 
@@ -151,8 +153,7 @@ export default function ChatSidebar({
                 })
             }
 
-            // Refresh AI suggestions after sending
-            setTimeout(fetchSuggestions, 500)
+            // Don't auto-refresh AI suggestions — only on manual refresh to save API calls
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to send message')
         } finally {
