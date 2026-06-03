@@ -3,6 +3,7 @@ import connectDb from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import User from "@/models/user.model"
 import Vehicle from "@/models/vehicles.model"
+import Booking from "@/models/booking.model"
 
 export async function GET(req: NextRequest) {
   try {
@@ -81,6 +82,55 @@ export async function GET(req: NextRequest) {
     // Pending vehicles (not yet approved)
     const pendingVehiclesCount = await Vehicle.countDocuments({ status: "pending" })
 
+    // ── Ride & Earnings Statistics ────────────────────────────────────────────────
+    const totalRides = await Booking.countDocuments({})
+    const completedRides = await Booking.countDocuments({ status: 'completed' })
+    const cancelledRides = await Booking.countDocuments({ status: { $in: ['cancelled', 'rejected'] } })
+    const activeRides = await Booking.countDocuments({ status: { $in: ['requested', 'confirmed', 'started'] } })
+
+    // Aggregate earnings from completed rides
+    const earningsAgg = await Booking.aggregate([
+        { $match: { status: 'completed' } },
+        {
+            $group: {
+                _id: null,
+                totalPlatformFees: { $sum: { $ifNull: ['$platformFee', 0] } },
+                totalPartnerPayouts: { $sum: { $ifNull: ['$partnerEarning', 0] } },
+                totalRevenue: { $sum: { $ifNull: ['$totalFare', '$estimatedFare'] } },
+            }
+        }
+    ])
+
+    const earnings = earningsAgg[0] || { totalPlatformFees: 0, totalPartnerPayouts: 0, totalRevenue: 0 }
+
+    // Recent bookings (last 20)
+    const recentBookings = await Booking.find({})
+        .populate('user', 'name email')
+        .populate('partner', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean()
+
+    const recentBookingsList = recentBookings.map((b: any) => ({
+        _id: String(b._id),
+        userName: b.user?.name || 'Unknown',
+        userEmail: b.user?.email || '',
+        partnerName: b.partner?.name || 'Unassigned',
+        partnerEmail: b.partner?.email || '',
+        vehicleType: b.vehicleType,
+        status: b.status,
+        paymentMethod: b.paymentMethod,
+        paymentStatus: b.paymentStatus,
+        totalFare: b.totalFare || b.estimatedFare,
+        platformFee: b.platformFee || 0,
+        partnerEarning: b.partnerEarning || 0,
+        distanceKm: b.distanceKm,
+        createdAt: b.createdAt,
+    }))
+
+    // Total customers count (role 'user' = customer)
+    const totalCustomers = await User.countDocuments({ role: 'user' })
+
     return NextResponse.json({
       totalPartners,
       totalApprovedPartners,
@@ -90,6 +140,18 @@ export async function GET(req: NextRequest) {
       kycReviews,
       pricingReviews,
       pendingVehiclesCount,
+      // Ride stats
+      totalRides,
+      completedRides,
+      cancelledRides,
+      activeRides,
+      totalCustomers,
+      // Earnings
+      adminEarnings: earnings.totalPlatformFees,
+      totalPartnerPayouts: earnings.totalPartnerPayouts,
+      totalRevenue: earnings.totalRevenue,
+      // Recent bookings
+      recentBookings: recentBookingsList,
     })
   } catch (error) {
     console.error("Admin dashboard error:", error)

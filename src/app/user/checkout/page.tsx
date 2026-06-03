@@ -105,8 +105,9 @@ function CheckoutPageContent() {
   const VehicleIcon = VEHICLE_ICONS[vehicle] || Car
 
   // Calculate pricing breakdown details
-  const tax = Math.round(estimatedFare * 0.05)
-  const total = Math.round(estimatedFare + tax)
+  const platformFee = Math.round(estimatedFare * 0.05)
+  const totalFare = estimatedFare + platformFee
+  const partnerEarning = estimatedFare
 
   return (
     <PageShell>
@@ -217,15 +218,18 @@ function CheckoutPageContent() {
                   <span className='font-semibold text-white'>Rs {estimatedFare.toLocaleString()}</span>
                 </div>
                 <div className='flex justify-between text-zinc-400'>
-                  <span>Tax & Service fee (5%)</span>
-                  <span className='font-semibold text-white'>Rs {tax.toLocaleString()}</span>
+                  <span>Platform fee (5%)</span>
+                  <span className='font-semibold text-white'>Rs {platformFee.toLocaleString()}</span>
                 </div>
                 <div className='border-t border-white/5 pt-3 flex justify-between text-sm font-bold text-white'>
                   <span>Total Payable</span>
                   <span className='text-base font-black text-emerald-400'>
-                    Rs {total.toLocaleString()}
+                    Rs {totalFare.toLocaleString()}
                   </span>
                 </div>
+                <p className='text-[10px] text-zinc-600'>
+                  Partner earns: Rs {partnerEarning.toLocaleString()}
+                </p>
               </div>
             </div>
 

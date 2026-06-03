@@ -63,6 +63,13 @@ export async function POST(req: NextRequest) {
 
         const isOnlinePayment = paymentMethod === 'card'
 
+        // Platform fee = 5% of base fare (goes to admin)
+        const PLATFORM_FEE_PERCENT = 0.05
+        const baseFare = Number(estimatedFare) || 0
+        const platformFee = Math.round(baseFare * PLATFORM_FEE_PERCENT)
+        const totalFare = baseFare + platformFee   // what customer pays
+        const partnerEarning = baseFare              // what partner receives
+
         // Card payments are deferred until ride completion.
         // Booking always starts as 'requested' regardless of payment method.
         const booking = await Booking.create({
@@ -77,7 +84,10 @@ export async function POST(req: NextRequest) {
                 coordinates: [dropoff.lng, dropoff.lat],
             },
             vehicleType,
-            estimatedFare,
+            estimatedFare: baseFare,
+            platformFee,
+            partnerEarning,
+            totalFare,
             distanceKm: distanceKm || 0,
             durationMin: durationMin || 0,
             status: 'requested',

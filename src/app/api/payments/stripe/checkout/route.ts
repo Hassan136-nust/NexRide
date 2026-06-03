@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
             )
         }
 
+        // Charge totalFare (base fare + 5% platform fee)
+        const chargeAmount = booking.totalFare || booking.estimatedFare
         const checkoutUrl = await createStripeCheckoutSession({
-            amount: booking.estimatedFare,
+            amount: chargeAmount,
             currency: 'pkr',
             bookingId: booking._id.toString(),
         })

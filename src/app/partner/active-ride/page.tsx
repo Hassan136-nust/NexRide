@@ -53,6 +53,9 @@ interface ActiveBooking {
     dropoff: { label: string; coordinates: [number, number] }
     vehicleType: string
     estimatedFare: number
+    platformFee: number
+    partnerEarning: number
+    totalFare: number
     distanceKm: number
     durationMin: number
     status: 'confirmed' | 'started'
@@ -230,7 +233,8 @@ export default function ActiveRidePage() {
                                     <InfoRow icon={<Hash size={11} />} label='Plate number' value={booking.vehicleNumber} />
                                     <InfoRow icon={<Compass size={11} />} label='Distance' value={`${booking.distanceKm.toFixed(1)} km`} />
                                     <InfoRow icon={<Clock size={11} />} label='Est. time' value={`${booking.durationMin.toFixed(0)} min`} />
-                                    <InfoRow icon={<DollarSign size={11} />} label='Fare' value={`Rs ${booking.estimatedFare}`} />
+                                    <InfoRow icon={<DollarSign size={11} />} label='Total fare' value={`Rs ${booking.totalFare || booking.estimatedFare}`} />
+                                    <InfoRow icon={<DollarSign size={11} />} label='Your earning' value={`Rs ${booking.partnerEarning || booking.estimatedFare}`} />
                                     <InfoRow
                                         icon={<CreditCard size={11} />}
                                         label='Payment'

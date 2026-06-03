@@ -47,6 +47,9 @@ interface BookingRequest {
     dropoff: { label: string; coordinates: [number, number] }
     vehicleType: string
     estimatedFare: number
+    platformFee: number
+    partnerEarning: number
+    totalFare: number
     distanceKm: number
     durationMin: number
     status: string
@@ -201,9 +204,12 @@ export default function PendingRequestsPage() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className='flex items-center gap-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 text-[10px] font-black text-emerald-400 shrink-0'>
-                                                <Icon size={10} />
-                                                Rs {req.estimatedFare}
+                                            <div className='flex flex-col items-end gap-0.5 shrink-0'>
+                                                <div className='flex items-center gap-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 text-[10px] font-black text-emerald-400'>
+                                                    <Icon size={10} />
+                                                    Rs {req.totalFare || req.estimatedFare}
+                                                </div>
+                                                <p className='text-[9px] text-zinc-600'>You earn: Rs {req.partnerEarning || req.estimatedFare}</p>
                                             </div>
                                         </div>
 

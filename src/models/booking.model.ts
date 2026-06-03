@@ -25,6 +25,9 @@ export interface IBooking extends Document {
     }
     vehicleType: string
     estimatedFare: number
+    platformFee: number
+    partnerEarning: number
+    totalFare: number
     distanceKm: number
     durationMin: number
     status: BookingStatus
@@ -74,6 +77,18 @@ const bookingSchema = new Schema<IBooking>(
         estimatedFare: {
             type: Number,
             required: true,
+        },
+        platformFee: {
+            type: Number,
+            default: 0,
+        },
+        partnerEarning: {
+            type: Number,
+            default: 0,
+        },
+        totalFare: {
+            type: Number,
+            default: 0,
         },
         distanceKm: {
             type: Number,

@@ -10,7 +10,8 @@ import {
 import {
   Users, CheckCircle, Clock, XCircle, Car,
   FileText, LayoutDashboard, ChevronRight,
-  LogOut, Menu, Shield, TrendingUp, ExternalLink
+  LogOut, Menu, Shield, TrendingUp, ExternalLink,
+  DollarSign, Activity, UserCheck, CreditCard
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useDispatch } from 'react-redux'
@@ -18,13 +19,30 @@ import { setUserData } from '@/redux/userSlice'
 import { useRouter } from 'next/navigation'
 import AdminPricingReviewModal from './AdminPricingReviewModal'
 
-type Tab = 'overview' | 'partners' | 'kyc' | 'vehicles'
+type Tab = 'overview' | 'partners' | 'kyc' | 'vehicles' | 'rides'
 
 type PartnerReview = {
   _id: string
   name: string
   email: string
   vehicleType?: string | null
+}
+
+type RideBooking = {
+  _id: string
+  userName: string
+  userEmail: string
+  partnerName: string
+  partnerEmail: string
+  vehicleType: string
+  status: string
+  paymentMethod: string
+  paymentStatus: string
+  totalFare: number
+  platformFee: number
+  partnerEarning: number
+  distanceKm: number
+  createdAt: string
 }
 
 type DashboardData = {
@@ -36,10 +54,20 @@ type DashboardData = {
   kycReviews: PartnerReview[]
   pricingReviews: PartnerReview[]
   pendingVehiclesCount: number
+  totalRides: number
+  completedRides: number
+  cancelledRides: number
+  activeRides: number
+  totalCustomers: number
+  adminEarnings: number
+  totalPartnerPayouts: number
+  totalRevenue: number
+  recentBookings: RideBooking[]
 }
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'rides', label: 'Rides', icon: Activity },
   { id: 'partners', label: 'Partners', icon: Users },
   { id: 'kyc', label: 'KYC', icon: Shield },
   { id: 'vehicles', label: 'Vehicles', icon: Car },
@@ -282,6 +310,33 @@ export default function AdminDashboard() {
                     <PartnerTable reviews={data.pendingPartnerReviews.slice(0, 5)} onReview={(id) => router.push(`/admin/reviews/partner/${id}`)} />
                   </div>
 
+                  {/* Earnings & Rides Preview */}
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='flex items-center justify-between px-5 py-4 border-b border-white/10'>
+                      <h2 className='text-sm font-medium text-gray-300'>Earnings & Rides</h2>
+                      <button
+                        onClick={() => setTab('rides')}
+                        className='text-xs text-gray-500 hover:text-white transition flex items-center gap-1'
+                      >
+                        View all <ChevronRight size={12} />
+                      </button>
+                    </div>
+                    <div className='grid grid-cols-3 divide-x divide-white/5'>
+                      <div className='p-5 text-center'>
+                        <p className='text-2xl font-bold text-emerald-400'>Rs {(data.adminEarnings || 0).toLocaleString()}</p>
+                        <p className='text-[10px] text-gray-500 mt-1'>Admin Earnings (5%)</p>
+                      </div>
+                      <div className='p-5 text-center'>
+                        <p className='text-2xl font-bold text-sky-400'>{data.totalRides || 0}</p>
+                        <p className='text-[10px] text-gray-500 mt-1'>Total Rides</p>
+                      </div>
+                      <div className='p-5 text-center'>
+                        <p className='text-2xl font-bold text-amber-400'>{data.totalCustomers || 0}</p>
+                        <p className='text-[10px] text-gray-500 mt-1'>Customers</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </motion.div>
               )}
 
@@ -405,6 +460,109 @@ export default function AdminDashboard() {
                     ) : (
                       <div className='p-8 text-center text-sm text-gray-500'>
                         No partners pending pricing review
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* ── RIDES TAB ── */}
+              {tab === 'rides' && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className='space-y-5'>
+
+                  {/* Earnings & Stats KPIs */}
+                  <div className='grid grid-cols-2 lg:grid-cols-4 gap-4'>
+                    {[
+                      { label: 'Admin Earnings (5%)', value: `Rs ${(data.adminEarnings || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+                      { label: 'Total Revenue', value: `Rs ${(data.totalRevenue || 0).toLocaleString()}`, icon: TrendingUp, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+                      { label: 'Partner Payouts', value: `Rs ${(data.totalPartnerPayouts || 0).toLocaleString()}`, icon: CreditCard, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+                      { label: 'Total Customers', value: data.totalCustomers || 0, icon: UserCheck, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+                    ].map((kpi, i) => {
+                      const Icon = kpi.icon
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.07 }}
+                          className={`p-5 rounded-2xl border ${kpi.border} ${kpi.bg}`}
+                        >
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${kpi.bg} mb-3`}>
+                            <Icon size={18} className={kpi.color} />
+                          </div>
+                          <p className='text-xl font-bold'>{kpi.value}</p>
+                          <p className='text-xs text-gray-400 mt-1'>{kpi.label}</p>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Ride Status KPIs */}
+                  <div className='grid grid-cols-4 gap-3'>
+                    {[
+                      { label: 'Total Rides', value: data.totalRides, color: 'text-white' },
+                      { label: 'Completed', value: data.completedRides, color: 'text-emerald-400' },
+                      { label: 'Active', value: data.activeRides, color: 'text-sky-400' },
+                      { label: 'Cancelled', value: data.cancelledRides, color: 'text-red-400' },
+                    ].map((s, i) => (
+                      <div key={i} className='p-4 rounded-2xl border border-white/10 bg-white/[0.03] text-center'>
+                        <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+                        <p className='text-[10px] text-gray-500 mt-1'>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Recent Bookings Table */}
+                  <div className='rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden'>
+                    <div className='px-5 py-4 border-b border-white/10'>
+                      <h2 className='text-sm font-medium text-gray-300'>Recent Rides</h2>
+                    </div>
+                    {data.recentBookings && data.recentBookings.length > 0 ? (
+                      <div className='overflow-x-auto'>
+                        <table className='w-full text-xs'>
+                          <thead>
+                            <tr className='border-b border-white/10 text-gray-500'>
+                              <th className='px-4 py-3 text-left font-semibold'>Customer</th>
+                              <th className='px-4 py-3 text-left font-semibold'>Partner</th>
+                              <th className='px-4 py-3 text-left font-semibold'>Vehicle</th>
+                              <th className='px-4 py-3 text-left font-semibold'>Status</th>
+                              <th className='px-4 py-3 text-right font-semibold'>Total</th>
+                              <th className='px-4 py-3 text-right font-semibold'>Admin (5%)</th>
+                              <th className='px-4 py-3 text-right font-semibold'>Partner</th>
+                            </tr>
+                          </thead>
+                          <tbody className='divide-y divide-white/5'>
+                            {data.recentBookings.map((ride) => (
+                              <tr key={ride._id} className='hover:bg-white/[0.02] transition'>
+                                <td className='px-4 py-3'>
+                                  <p className='font-medium text-white'>{ride.userName}</p>
+                                  <p className='text-[10px] text-gray-600'>{ride.userEmail}</p>
+                                </td>
+                                <td className='px-4 py-3'>
+                                  <p className='font-medium text-white'>{ride.partnerName}</p>
+                                  <p className='text-[10px] text-gray-600'>{ride.partnerEmail}</p>
+                                </td>
+                                <td className='px-4 py-3 capitalize text-gray-400'>{ride.vehicleType}</td>
+                                <td className='px-4 py-3'>
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                                    ride.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    ride.status === 'cancelled' || ride.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                    'bg-amber-500/20 text-amber-400'
+                                  }`}>
+                                    {ride.status}
+                                  </span>
+                                </td>
+                                <td className='px-4 py-3 text-right font-semibold text-white'>Rs {ride.totalFare}</td>
+                                <td className='px-4 py-3 text-right font-semibold text-emerald-400'>Rs {ride.platformFee}</td>
+                                <td className='px-4 py-3 text-right font-semibold text-sky-400'>Rs {ride.partnerEarning}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className='p-8 text-center text-sm text-gray-500'>
+                        No rides yet
                       </div>
                     )}
                   </div>

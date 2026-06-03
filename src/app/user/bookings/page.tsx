@@ -101,6 +101,9 @@ interface BookingLog {
     dropoff: { label: string; coordinates: [number, number] }
     vehicleType: string
     estimatedFare: number
+    platformFee: number
+    partnerEarning: number
+    totalFare: number
     distanceKm: number
     durationMin: number
     status: BookingStatus
@@ -480,7 +483,7 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
                 </div>
 
                 <div className='grid grid-cols-3 gap-2 border-t border-white/[0.05] pt-3 text-center'>
-                    <Metric label='Fare' value={`Rs ${booking.estimatedFare}`} />
+                    <Metric label='Fare' value={`Rs ${booking.totalFare || booking.estimatedFare}`} />
                     <Metric label='Distance' value={`${booking.distanceKm.toFixed(1)} km`} icon={<Compass size={11} />} />
                     <Metric label='Time' value={`${booking.durationMin.toFixed(0)} min`} icon={<Clock size={11} />} />
                 </div>
@@ -539,7 +542,7 @@ function BookingCard({ booking, onPaymentStarted, onBookingUpdated }: { booking:
                                     ) : (
                                         <>
                                             <CreditCard size={13} />
-                                            Pay Now — Rs {booking.estimatedFare.toLocaleString()}
+                                            Pay Now — Rs {(booking.totalFare || booking.estimatedFare).toLocaleString()}
                                         </>
                                     )}
                                 </button>

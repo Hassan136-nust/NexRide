@@ -86,6 +86,9 @@ interface BookingLog {
     }
     vehicleType: string
     estimatedFare: number
+    platformFee: number
+    partnerEarning: number
+    totalFare: number
     distanceKm: number
     durationMin: number
     status: string
@@ -214,8 +217,11 @@ export default function PartnerBookingsPage() {
                                                 {Badge.label}
                                             </span>
                                             <span className='rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[10px] font-black text-emerald-400'>
-                                                Rs {log.estimatedFare}
+                                                Rs {log.partnerEarning || log.estimatedFare}
                                             </span>
+                                            {log.totalFare && log.totalFare !== log.estimatedFare && (
+                                                <span className='text-[9px] text-zinc-600'>Total: Rs {log.totalFare}</span>
+                                            )}
                                         </div>
                                     </div>
 
