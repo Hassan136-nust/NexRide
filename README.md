@@ -56,7 +56,6 @@
 
 ### 💳 Multi-Payment Gateway Integration
 - **Stripe Integration**: Secure card payments with automatic checkout sessions
-- **Safepay Support**: Local payment gateway integration for Pakistan market
 - **Cash on Delivery**: Flexible payment options
 - **Payment Tracking**: Comprehensive transaction history and status management
 
@@ -728,8 +727,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 👨‍💻 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
+- GitHub: [Hassan136-nust](https://github.com/Hassan136-nust)
+- LinkedIn: [Hassan](https://www.linkedin.com/in/hassan-jamal-a92191324/)
 - Email: your.email@example.com
 
 ---
@@ -750,16 +749,12 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 Need help? Reach out through:
 
-- 📧 Email: support@nexride.com
-- 💬 Discord: [Join our community](https://discord.gg/nexride)
-- 🐦 Twitter: [@nexride](https://twitter.com/nexride)
-- 📚 Documentation: [docs.nexride.com](https://docs.nexride.com)
-
+- 📧 Email: pyrohassan786@gmail.com
 ---
 
 ## 🎉 Stargazers
 
-[![Stargazers repo roster for @yourusername/nexride](https://reporoster.com/stars/yourusername/nexride)](https://github.com/yourusername/nexride/stargazers)
+[![Stargazers repo roster for Hassan136-nust/nexride](https://reporoster.com/stars/Hassan136-nust/nexride)](https://github.com/Hassan136-nust/nexride/stargazers)
 
 ---
 
@@ -767,7 +762,7 @@ Need help? Reach out through:
   
   ### ⭐ Star this repo if you find it helpful!
   
-  Made with ❤️ by [Your Name](https://github.com/yourusername)
+  Made with ❤️ by [Hassan Jamal](https://github.com/yourusername)
   
   **[⬆ back to top](#-nexride)**
 
