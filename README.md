@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./public/logo.png" alt="NexRide Logo" width="200"/>
   
-  # 🚗 NexRide
+  #  NexRide
   
   ### Next-Generation AI-Powered Ride-Hailing Platform
   
@@ -729,8 +729,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Your Name**
 - GitHub: [Hassan136-nust](https://github.com/Hassan136-nust)
 - LinkedIn: [Hassan](https://www.linkedin.com/in/hassan-jamal-a92191324/)
-- Email: your.email@example.com
-
+- Email: pyrohassan786@gmail.com
 ---
 
 ## 🙏 Acknowledgments
