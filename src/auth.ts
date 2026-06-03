@@ -29,11 +29,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Email and password are required")
         }
 
+        const email = credentials.email.toString()
+        const password = credentials.password.toString()
+
         await connectDb()
 
-        const user = await User.findOne({
-          email: credentials.email,
-        })
+        const user = await User.findOne({ email })
 
         if (!user) {
           throw new Error("User does not exist")
@@ -44,7 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          password,
           user.password
         )
 
