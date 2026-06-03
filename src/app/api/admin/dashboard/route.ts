@@ -24,9 +24,9 @@ export async function GET(req: NextRequest) {
       $or: [
         { partnerStatus: "pending" },
         { partnerStatus: "onboarding" },
-        { partnerOnboardingSteps: { $gte: 3 }, partnerStatus: { $nin: ["approved", "rejected", "onboarding"] } }
+        { partnerOnboardingSteps: { $gte: 3 }, partnerStatus: { $nin: ["approved", "rejected", "onboarding"] as const } }
       ]
-    }
+    } as any
 
     const totalPendingPartners = await User.countDocuments(pendingFilter)
     const totalPartners = totalApprovedPartners + totalPendingPartners + totalRejectedPartners
@@ -35,9 +35,9 @@ export async function GET(req: NextRequest) {
     const reviewFilter = {
       $or: [
         { partnerStatus: "pending" },
-        { partnerOnboardingSteps: { $gte: 3 }, partnerStatus: { $nin: ["approved", "rejected", "onboarding"] } }
+        { partnerOnboardingSteps: { $gte: 3 }, partnerStatus: { $nin: ["approved", "rejected", "onboarding"] as const } }
       ]
-    }
+    } as any
 
     const pendingPartnerUsers = await User.find(reviewFilter).lean()
 

@@ -165,6 +165,115 @@ io.on("connection", (socket) => {
       socket.leave(`booking:${bookingId}`)
     }
   })
+
+  // ── Video KYC: Join room with validation ────────────────────────────────
+  socket.on("joinKycRoom", async ({ roomId, userId, role }) => {
+    try {
+      if (!roomId || !userId || !role) {
+        socket.emit("kycError", { message: "Missing required parameters" })
+        return
+      }
+
+      // Find partner by roomId
+      const partner = await User.findOne({ videoKycRoomId: roomId }).lean()
+
+      if (!partner) {
+        socket.emit("kycError", { message: "Invalid KYC room" })
+        return
+      }
+
+      // Validate: Only admin or the specific partner can join
+      const isPartner = role === "partner" && String(partner._id) === userId
+      const isAdmin = role === "admin"
+
+      if (!isPartner && !isAdmin) {
+        socket.emit("kycError", { message: "Unauthorized to join this KYC room" })
+        return
+      }
+
+      // Check if partner's KYC is still in progress
+      if (partner.videoKycStatus !== "in_progress") {
+        socket.emit("kycError", { message: "KYC session is not active" })
+        return
+      }
+
+      // Join the room
+      socket.join(roomId)
+      socket.kycRoomId = roomId
+      socket.kycRole = role
+
+      console.log(`${role} ${userId} joined KYC room: ${roomId}`)
+
+      // Notify others in the room
+      socket.to(roomId).emit("userJoinedKyc", { userId, role })
+      socket.emit("kycJoinSuccess", { roomId, partnerId: String(partner._id) })
+
+    } catch (error) {
+      console.error("joinKycRoom error:", error.message)
+      socket.emit("kycError", { message: "Failed to join KYC room" })
+    }
+  })
+
+  // ── Video KYC: Leave room ───────────────────────────────────────────────
+  socket.on("leaveKycRoom", ({ roomId }) => {
+    if (roomId) {
+      socket.leave(roomId)
+      socket.to(roomId).emit("userLeftKyc", { userId: socket.userId, role: socket.kycRole })
+      console.log(`User ${socket.userId} left KYC room: ${roomId}`)
+    }
+  })
+
+  // ── WebRTC Signaling: Offer ──────────────────────────────────────────────
+  socket.on("kycOffer", ({ roomId, offer }) => {
+    if (!roomId || !offer) return
+    socket.to(roomId).emit("kycOffer", { offer, from: socket.userId })
+    console.log(`Offer sent in room: ${roomId}`)
+  })
+
+  // ── WebRTC Signaling: Answer ─────────────────────────────────────────────
+  socket.on("kycAnswer", ({ roomId, answer }) => {
+    if (!roomId || !answer) return
+    socket.to(roomId).emit("kycAnswer", { answer, from: socket.userId })
+    console.log(`Answer sent in room: ${roomId}`)
+  })
+
+  // ── WebRTC Signaling: ICE Candidate ──────────────────────────────────────
+  socket.on("kycIceCandidate", ({ roomId, candidate }) => {
+    if (!roomId || !candidate) return
+    socket.to(roomId).emit("kycIceCandidate", { candidate, from: socket.userId })
+  })
+
+  // ── Video KYC: Complete session (admin only) ────────────────────────────
+  socket.on("completeKyc", async ({ roomId, partnerId, status, rejectionReason }) => {
+    try {
+      // Verify this is an admin
+      const admin = await User.findById(socket.userId).lean()
+      if (!admin || admin.role !== "admin") {
+        socket.emit("kycError", { message: "Only admin can complete KYC" })
+        return
+      }
+
+      // Update partner status
+      const updateData = {
+        videoKycStatus: status, // 'approved' or 'rejected'
+        videoKycRoomId: "", // Clear room ID
+      }
+
+      if (status === "rejected" && rejectionReason) {
+        updateData.videoKycRejectionReason = rejectionReason
+      }
+
+      await User.findByIdAndUpdate(partnerId, updateData)
+
+      // Notify all participants in the room
+      io.to(roomId).emit("kycCompleted", { status, rejectionReason })
+
+      console.log(`KYC completed for partner ${partnerId}: ${status}`)
+    } catch (error) {
+      console.error("completeKyc error:", error.message)
+      socket.emit("kycError", { message: "Failed to complete KYC" })
+    }
+  })
 })
 
 connectDb().then(() => {
