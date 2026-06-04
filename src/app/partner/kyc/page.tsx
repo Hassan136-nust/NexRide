@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect } from "react"
+import React, { useRef, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Video } from "lucide-react"
 import { useSelector } from "react-redux"
@@ -27,9 +27,21 @@ export default function PartnerKycRoom() {
       const appId = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID)
       const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || ""
 
-      const roomID = String(userData._id)
-      const userID = String(userData._id)
-      const userName = userData.name || "Partner"
+      // Fetch latest user record to get admin-assigned room id if available
+      let latestUser = userData
+      try {
+        const res = await fetch("/api/auth/user/me")
+        if (res.ok) {
+          const jd = await res.json()
+          if (jd?.user) latestUser = jd.user
+        }
+      } catch (err) {
+        console.error("Failed to refresh user before joining KYC:", err)
+      }
+
+      const roomID = String(latestUser.videoKycRoomId || latestUser._id)
+      const userID = String(latestUser._id)
+      const userName = latestUser.name || "Partner"
 
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appId,
@@ -54,7 +66,37 @@ export default function PartnerKycRoom() {
       })
     }
 
-    initZego()
+    // Try to get a server-assigned room id; if not present, poll until admin starts session
+    const tryJoin = async () => {
+      // initial attempt will be inside initZego which refreshes once
+      await initZego()
+
+      // If partner still doesn't have an assigned room id (admin hasn't started), poll every 3s
+      const checkRoom = async () => {
+        try {
+          const res = await fetch("/api/auth/user/me")
+          if (!res.ok) return false
+          const jd = await res.json()
+          const latest = jd?.user
+          if (latest?.videoKycRoomId) {
+            // reload the page to re-run init and join the correct room
+            window.location.reload()
+            return true
+          }
+        } catch (err) {
+          console.error("Error polling for KYC room:", err)
+        }
+        return false
+      }
+
+      let intervalId: any = null
+      intervalId = setInterval(async () => {
+        const found = await checkRoom()
+        if (found && intervalId) clearInterval(intervalId)
+      }, 3000)
+    }
+
+    tryJoin()
   }, [userData, router])
 
   if (!userData) {
