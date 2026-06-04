@@ -97,12 +97,12 @@ function Footer() {
 
               <motion.div whileHover={{ x: 4 }} className='flex items-center gap-2'>
                 <MapPin size={16} />
-                <span>Pattoki, Punjab, Pakistan</span>
+                <span>NUST, Islamabad, Pakistan</span>
               </motion.div>
 
               <motion.div whileHover={{ x: 4 }} className='flex items-center gap-2'>
                 <Phone size={16} />
-                <span>+92 300 0000000</span>
+                <span>+92 328 9082754</span>
               </motion.div>
 
               <motion.div whileHover={{ x: 4 }} className='flex items-center gap-2'>
