@@ -38,6 +38,8 @@ function Nav({ onLoginClick, onSignupClick }: NavProps) {
     if (item === "Pending Requests") return "/partner/pending-requests"
     if (item === "Bookings") return userData?.role === "partner" ? "/partner/bookings" : "/user/bookings"
     if (item === "Active Ride") return "/partner/active-ride"
+    // For About Us and Contact, scroll to the footer instead of navigating to a separate page
+    if (item === "About Us" || item === "Contact") return "/#footer"
     return `/${item.toLowerCase().replace(/\s+/g, "-")}`
   }
 

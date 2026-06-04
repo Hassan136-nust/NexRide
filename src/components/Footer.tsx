@@ -28,7 +28,7 @@ function Footer() {
   }
 
   return (
-    <footer className='w-full bg-zinc-950 text-white px-6 py-16'>
+    <footer id="footer" className='w-full bg-zinc-950 text-white px-6 py-16'>
       <div className='max-w-7xl mx-auto'>
 
         {/* Top Section */}
