@@ -208,8 +208,19 @@ export default function PartnerDashboard() {
               key={step.id}
               whileHover={status !== "locked" ? { scale: 1.025, y: -2 } : {}}
               whileTap={status !== "locked" ? { scale: 0.985 } : {}}
-              onClick={() => {
+              onClick={async () => {
                 if (status === "locked") return
+                // Video KYC start for partner
+                if (step.id === 5) {
+                  try {
+                    await fetch('/api/partner/video-kyc/start', { method: 'POST' })
+                  } catch (err) {
+                    console.error('Failed to request KYC start:', err)
+                  }
+                  router.push(step.route)
+                  return
+                }
+
                 if (step.id === 6) {
                   setShowPricing(true)
                   return

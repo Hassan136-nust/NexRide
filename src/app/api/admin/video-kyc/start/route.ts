@@ -31,10 +31,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "User is not a partner" }, { status: 400 })
     }
 
-    // Generate unique room ID for this KYC session
-    const roomId = `kyc_${partnerId}_${randomBytes(8).toString("hex")}`
+    // If partner already has an assigned room (e.g., partner started the session), reuse it
+    let roomId = partner.videoKycRoomId
+    if (!roomId) {
+      roomId = `kyc_${partnerId}_${randomBytes(8).toString("hex")}`
+    }
 
-    // Update partner's video KYC status and assign room
+    // Update partner's video KYC status and assign room (if not already set)
     const updatedPartner = await User.findByIdAndUpdate(
       partnerId,
       { 
