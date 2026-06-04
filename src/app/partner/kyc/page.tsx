@@ -103,7 +103,7 @@ export default function PartnerKycRoom() {
     const tryJoin = async () => {
       const fetchLatest = async (): Promise<LatestUser | null> => {
         try {
-          const res = await fetch("/api/auth/user/me")
+          const res = await fetch("/api/auth/user/me", { credentials: 'include' })
 
           if (!res.ok) return null
 

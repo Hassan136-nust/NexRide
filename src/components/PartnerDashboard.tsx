@@ -213,7 +213,11 @@ export default function PartnerDashboard() {
                 // Video KYC start for partner
                 if (step.id === 5) {
                   try {
-                    await fetch('/api/partner/video-kyc/start', { method: 'POST' })
+                    const res = await fetch('/api/partner/video-kyc/start', { method: 'POST', credentials: 'include' })
+                    if (!res.ok) {
+                      console.error('KYC start returned', res.status)
+                      // still navigate so partner sees waiting UI, but log error
+                    }
                   } catch (err) {
                     console.error('Failed to request KYC start:', err)
                   }
