@@ -7,6 +7,27 @@ import { useSelector } from "react-redux"
 
 import { RootState } from "@/redux/store"
 
+interface LatestUser {
+  _id: string
+  name?: string
+  videoKycRoomId?: string
+}
+
+interface ZegoInstance {
+  destroy?: () => void
+  joinRoom: (config: {
+    container: HTMLDivElement
+    scenario: {
+      mode: unknown
+    }
+    showScreenSharingButton: boolean
+    showPreJoinView: boolean
+    turnOnMicrophoneWhenJoining: boolean
+    turnOnCameraWhenJoining: boolean
+    onLeaveRoom: () => void
+  }) => void
+}
+
 export default function PartnerKycRoom() {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -23,8 +44,12 @@ export default function PartnerKycRoom() {
     }
 
     let intervalId: NodeJS.Timeout | null = null
+    let zpRef: ZegoInstance | null = null
 
-    const initZego = async () => {
+    const initZego = async (
+      roomID: string,
+      latestUser: LatestUser
+    ) => {
       const { ZegoUIKitPrebuilt } = await import(
         "@zegocloud/zego-uikit-prebuilt"
       )
@@ -37,30 +62,6 @@ export default function PartnerKycRoom() {
 
       const serverSecret =
         process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || ""
-
-      // Refresh latest user data
-      let latestUser = userData
-
-      try {
-        const res = await fetch("/api/auth/user/me")
-
-        if (res.ok) {
-          const jd = await res.json()
-
-          if (jd?.user) {
-            latestUser = jd.user
-          }
-        }
-      } catch (err) {
-        console.error(
-          "Failed to refresh user before joining KYC:",
-          err
-        )
-      }
-
-      const roomID = String(
-        latestUser.videoKycRoomId || latestUser._id
-      )
 
       const userID = String(latestUser._id)
 
@@ -75,7 +76,11 @@ export default function PartnerKycRoom() {
           userName
         )
 
-      const zp = ZegoUIKitPrebuilt.create(kitToken)
+      const zp = ZegoUIKitPrebuilt.create(
+        kitToken
+      ) as ZegoInstance
+
+      zpRef = zp
 
       zp.joinRoom({
         container: containerRef.current,
@@ -96,37 +101,50 @@ export default function PartnerKycRoom() {
     }
 
     const tryJoin = async () => {
-      await initZego()
-
-      const checkRoom = async () => {
+      const fetchLatest = async (): Promise<LatestUser | null> => {
         try {
           const res = await fetch("/api/auth/user/me")
 
-          if (!res.ok) return false
+          if (!res.ok) return null
 
           const jd = await res.json()
 
-          const latest = jd?.user
-
-          if (latest?.videoKycRoomId) {
-            window.location.reload()
-            return true
-          }
+          return jd?.user ?? null
         } catch (err) {
           console.error(
-            "Error polling for KYC room:",
+            "Error fetching latest user:",
             err
           )
-        }
 
-        return false
+          return null
+        }
+      }
+
+      const latest = await fetchLatest()
+
+      if (latest?.videoKycRoomId) {
+        await initZego(
+          latest.videoKycRoomId,
+          latest
+        )
+
+        return
       }
 
       intervalId = setInterval(async () => {
-        const found = await checkRoom()
+        const latestPoll = await fetchLatest()
 
-        if (found && intervalId) {
-          clearInterval(intervalId)
+        if (latestPoll?.videoKycRoomId) {
+          if (intervalId) {
+            clearInterval(intervalId)
+          }
+
+          intervalId = null
+
+          await initZego(
+            latestPoll.videoKycRoomId,
+            latestPoll
+          )
         }
       }, 3000)
     }
@@ -136,6 +154,13 @@ export default function PartnerKycRoom() {
     return () => {
       if (intervalId) {
         clearInterval(intervalId)
+      }
+
+      if (
+        zpRef &&
+        typeof zpRef.destroy === "function"
+      ) {
+        zpRef.destroy()
       }
     }
   }, [userData, router])
