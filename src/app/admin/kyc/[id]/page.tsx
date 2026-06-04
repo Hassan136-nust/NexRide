@@ -21,51 +21,55 @@ export default function AdminKycRoom() {
         const appId = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID)
         const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET || ''
 
-                // Call server to start the KYC session and get the assigned room ID
-                let roomID = id
-                try {
-                    const startRes = await fetch('/api/admin/video-kyc/start', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ partnerId: id })
-                    })
-                    if (startRes.ok) {
-                        const jd = await startRes.json()
-                        if (jd?.roomId) roomID = jd.roomId
-                    } else {
-                        console.warn('Failed to start KYC on server, falling back to partner id as room')
-                    }
-                } catch (err) {
-                    console.error('Error starting KYC session:', err)
+        let zpRef: any = null
+        const startAndJoin = async () => {
+            // Call server to start the KYC session and get the assigned room ID
+            let roomID = id
+            try {
+                const startRes = await fetch('/api/admin/video-kyc/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ partnerId: id })
+                })
+                if (startRes.ok) {
+                    const jd = await startRes.json()
+                    if (jd?.roomId) roomID = jd.roomId
+                } else {
+                    console.warn('Failed to start KYC on server, falling back to partner id as room')
                 }
+            } catch (err) {
+                console.error('Error starting KYC session:', err)
+            }
 
-                // Admin uses an admin-prefixed userID so it's distinct from partner
-                const userID = 'admin-' + Math.floor(Math.random() * 100000)
-                const userName = 'NexRide Admin'
+            // Admin uses an admin-prefixed userID so it's distinct from partner
+            const userID = 'admin-' + Math.floor(Math.random() * 100000)
+            const userName = 'NexRide Admin'
 
-        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-            appId,
-            serverSecret,
-            roomID,
-            userID,
-            userName
-        )
+            const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+                appId,
+                serverSecret,
+                roomID,
+                userID,
+                userName
+            )
 
-        const zp = ZegoUIKitPrebuilt.create(kitToken)
+            const zp = ZegoUIKitPrebuilt.create(kitToken)
+            zpRef = zp
 
-        zp.joinRoom({
-            container: containerRef.current,
-            scenario: {
-                mode: ZegoUIKitPrebuilt.VideoConference,
-            },
-            showScreenSharingButton: false,
-            showPreJoinView: true,
-            turnOnMicrophoneWhenJoining: true,
-            turnOnCameraWhenJoining: true,
-        })
-
+            zp.joinRoom({
+                container: containerRef.current,
+                scenario: {
+                    mode: ZegoUIKitPrebuilt.VideoConference,
+                },
+                showScreenSharingButton: false,
+                showPreJoinView: true,
+                turnOnMicrophoneWhenJoining: true,
+                turnOnCameraWhenJoining: true,
+            })
+        }
+        startAndJoin()
         return () => {
-            zp.destroy()
+            if (zpRef && typeof zpRef.destroy === 'function') zpRef.destroy()
         }
     }, [id])
 
