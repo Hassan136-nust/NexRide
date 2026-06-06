@@ -55,7 +55,7 @@
 - **Read Receipts**: Message delivery and read status tracking
 - **AI Suggestions**: Context-aware quick replies for faster communication
 
-### 💳 Multi-Payment Gateway Integration
+### 💳 Payment Gateway Integration
 - **Stripe Integration**: Secure card payments with automatic checkout sessions
 - **Cash on Delivery**: Flexible payment options
 - **Payment Tracking**: Comprehensive transaction history and status management
