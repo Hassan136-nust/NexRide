@@ -41,6 +41,11 @@ function AuthModal({
 
   // SIGNUP
   const handleSignup = async () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("All fields are required")
+      return
+    }
+
     setError("")
     setLoading(true)
 
@@ -65,6 +70,11 @@ function AuthModal({
 
   // LOGIN (NEXTAUTH)
   const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required")
+      return
+    }
+
     setError("")
     setLoading(true)
 
@@ -278,7 +288,7 @@ function AuthModal({
                     />
                   </div>
 {error && (
-  <p className="text-red-500 text-sm text-center">
+  <p className="text-red-500 text-sm text-center mt-3 mb-3 font-medium">
     {error}
   </p>
 )}
