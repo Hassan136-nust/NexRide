@@ -78,7 +78,15 @@ function AuthModal({
       setLoading(false)
 
       if (res?.error) {
-        setError(res.error)
+        const normalizedError =
+          res.error === "Invalid password" ||
+          res.error === "User does not exist" ||
+          res.error === "Password not set for this user" ||
+          res.error === "Email or password does not exist"
+            ? "Email or password does not exist"
+            : res.error
+
+        setError(normalizedError)
       } else {
         onClose()
       }
